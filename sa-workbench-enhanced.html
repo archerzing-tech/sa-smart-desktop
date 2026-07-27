@@ -90,7 +90,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .ws-status{font-size:11px;font-family:var(--mono);color:var(--text-muted);display:flex;align-items:center;gap:8px}
 .ws-status .d{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
 
-.ws-body{flex:1;overflow-y:auto;padding:4px 0 60px;min-height:0;scroll-behavior:smooth}
+.ws-body{flex:1;overflow-y:auto;padding:4px 0 120px;min-height:0;scroll-behavior:smooth}
 .ws-body::-webkit-scrollbar{width:4px}
 .ws-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
@@ -678,10 +678,10 @@ function notify(icon, text) {
     </div>`;
   stack.appendChild(el);
 
-  // Default auto-dismiss after 5s (overridden by closeNotif for event-bound notifications)
+  // Each notification auto-dismisses after a random 5-8 seconds
   const timer = setTimeout(() => {
     if(el.parentNode) { el.classList.add('out'); setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300); }
-  }, 5000);
+  }, rand(5000, 8000));
   el._autoTimer = timer;
 
   // Cap at 6 visible — remove oldest immediately
@@ -1173,8 +1173,7 @@ async function execPhase(idx) {
       showTyp(true, labels[ev.icon]||'处理中', (i+1)+'/'+events.length);
 
       // Fire tool-call notification
-      let notifEl = null;
-      try { notifEl = notify(ev.icon, (ev.text||'').replace(/<[^>]*>/g,'').trim()); }catch(e){}
+      try { notify(ev.icon, (ev.text||'').replace(/<[^>]*>/g,'').trim()); }catch(e){}
 
       // Wait before showing the event
       await sleep(delay);
@@ -1185,7 +1184,6 @@ async function execPhase(idx) {
       const div = document.createElement('div'); div.className='ev';
       div.innerHTML = `<div class="ev-icon">${evIcon(ev.icon)}</div><div class="ev-body"><div class="ev-t">${ev.text||''}</div>${ev.sub ? `<div class="ev-sub" style="margin-left:28px;display:none">${ev.sub}</div>` : ''}</div>`;
       container.appendChild(div);
-      if(notifEl) closeNotif(notifEl);
       sb();
 
       // Show sub-text after a moment if present
