@@ -179,6 +179,37 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes es-in{from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)}}
 .ev-body{min-height:1.5em}
 
+.ia-box{margin:10px 0 4px 28px;animation:ia-in .35s cubic-bezier(.22,1,.36,1)}
+@keyframes ia-in{from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}}
+.ia-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 20px;
+  border-radius:var(--radius-sm);border:1.5px solid var(--accent);
+  background:var(--surface);color:var(--accent);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .2s;font-family:var(--font)
+}
+.ia-btn:hover{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(79,70,229,.2)}
+.ia-btn:active{transform:scale(.97)}
+.ia-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none;background:var(--surface);color:var(--text-muted);border-color:var(--border)}
+.ia-list{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.ia-opt{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .2s;user-select:none
+}
+.ia-opt:hover{border-color:var(--accent)}
+.ia-opt .ia-dot{
+  width:16px;height:16px;border-radius:50%;border:2px solid var(--text-muted);
+  flex-shrink:0;transition:all .25s;display:flex;align-items:center;justify-content:center
+}
+.ia-opt:hover .ia-dot{border-color:var(--accent)}
+.ia-opt .ia-body{flex:1;min-width:0}
+.ia-opt .ia-l{font-size:13px;font-weight:600;color:var(--text)}
+.ia-opt .ia-d{font-size:11.5px;color:var(--text-secondary);margin-top:1px}
+.ia-opt.selected{border-color:var(--accent);background:var(--accent-bg)}
+.ia-opt.selected .ia-dot{border-color:var(--accent);background:var(--accent)}
+.ia-opt.selected .ia-dot::after{content:'';width:5px;height:5px;border-radius:50%;background:#fff}
+.ia-opt.disabled{opacity:.5;pointer-events:none}
+
 /* Assets */
 .assets{
   padding:6px 16px 14px;display:flex;flex-direction:column;gap:6px;
@@ -245,6 +276,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .gs-text{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
 .gs-done{animation:gs-out .35s ease-out forwards}
 @keyframes gs-out{to{opacity:0;transform:translateY(-4px);max-height:0;padding:0;margin:0;overflow:hidden}}
+
+.refs{margin-bottom:10px;animation:rf-in .4s ease-out}
+@keyframes rf-in{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)}}
+.refs-title{font-size:11px;font-weight:600;color:var(--text-muted);font-family:var(--mono);letter-spacing:.5px;margin-bottom:4px}
+.refs-list{display:flex;flex-wrap:wrap;gap:4px}
+.ref-item{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface-alt);border-radius:6px;border:1px solid var(--border-light);font-size:11.5px;color:var(--text-secondary)}
 
 .typing-el{max-width:860px;margin:0 auto;padding:0 24px}
 .typing-el.hidden{visibility:hidden;height:0;overflow:hidden;padding:0;margin:0}
@@ -479,7 +516,7 @@ const dom = {
   typing: $('typingEl'), toast: $('toast'),
 };
 
-const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'' };
+const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ts = () => new Date().toTimeString().slice(0, 8);
@@ -651,6 +688,7 @@ function script_intent() {
     { icon:'found', text:'这次找到一份配置管理系统的设计指南，内容更贴合。', sub:'来源: 技术社区 · 发布于2025年', delay:500 },
     { icon:'decide', text:'综合来看，这是一个 <span class="hl">新业务构建</span> 类型的需求，领域是电商订单管理。', delay:800 },
     { icon:'info', text:'新业务构建需要完整走一遍调研→设计→实现→测试→部署的流程。', delay:400 },
+    { type:'confirm', icon:'done', text:'方向分析完成，确认后进入规划阶段。', btnText:'确认方向，继续 →', delay:300 },
   ];
 }
 
@@ -664,6 +702,14 @@ function script_planning() {
     { icon:'search', text:'评估一下各阶段的工作量...', delay:700 },
     { icon:'found', text:'找到一份相似项目的执行数据作为参考，做了适当调整。', delay:500 },
     { icon:'done', text:'规划完成：确定5阶段执行方案，按 skill 流程推进。', delay:500 },
+    { type:'decision', icon:'decide', text:'规划方案完成，确认后进入执行阶段。', delay:300,
+      question:'选择执行策略？',
+      options:[
+        { label:'标准推进', desc:'按5阶段方案顺序执行', value:'standard' },
+        { label:'快速迭代', desc:'缩短调研周期，快速出原型', value:'fast' },
+        { label:'分阶段交付', desc:'每完成一个阶段即交付验证', value:'phased' },
+      ],
+    },
   ];
 }
 
@@ -705,6 +751,7 @@ function script_execution(isAppend, isRework) {
     { icon:'search', text:'参考订单管理系统的常见架构模式...', delay:800 },
     { icon:'found', text:'找到一个开源订单系统的架构说明，虽然版本较旧但核心思路可以借鉴。', sub:'参考项目版本: 2.3 · 发布于2023年', delay:700 },
     { icon:'decide', text:'决定采用分层架构：<span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>', delay:800 },
+    { type:'confirm', icon:'done', text:'架构方案确认完成，可以进入编码阶段。', btnText:'开始编码 →', delay:300 },
     { icon:'done', text:'架构设计完成，开始编码实现、测试验证的自动化流程。', delay:600 },
   ];
 }
@@ -726,9 +773,19 @@ function script_verify(isRework) {
     steps.push(
       { icon:'search', text:'运行性能测试，验证系统在高负载下的表现...', delay:900 },
       { icon:'found', text:'性能数据：响应时间P99=187ms，TPS达到1240，符合预期指标。', delay:500 },
-      { icon:'done', text:'验证完成，系统功能和性能均满足要求。', delay:600 },
     );
   }
+  steps.push(
+    { type:'decision', icon:'decide', text:'验证全部通过。', delay:300,
+      question:'选择上线策略？',
+      options:[
+        { label:'全量上线', desc:'直接部署到所有节点', value:'full' },
+        { label:'灰度发布', desc:'先5%流量观察再全量', value:'canary' },
+        { label:'蓝绿部署', desc:'新旧集群并行，一键切换', value:'bluegreen' },
+      ],
+    },
+    { icon:'done', text:'验证完成，系统功能和性能均满足要求。', delay:600 },
+  );
   return steps;
 }
 
@@ -749,16 +806,133 @@ function script_delivery(isRework) {
       { icon:'info', text:'后续可考虑：多租户支持、国际化、审计日志增强等方向迭代。', delay:500 },
     );
   }
+  steps.push({ type:'confirm', icon:'done', text:'交付物已全部就绪。', btnText:'确认交付完成 →', delay:300 });
   return steps;
 }
 
+// ===== HVC (High-Value Customer) agent scripts =====
+const HVC_REFS = {
+  intent:['HKT 网络拓扑文档 - 接入层/汇聚层/核心层','HKT 设备型号清单 - Huawei/Cisco/Juniper','HKT SLA 等级定义 - VIP/VVIP 服务标准'],
+  planning:['3GPP TS 23.501 - 5G 网络切片标准','ETSI NFV 架构参考 - MANO 框架','HKT OSS/BSS 接口规范 v4.2'],
+  execution:['Huawei MA5800  QoS 配置指南','Cisco ASR9000 队列调度手册','HKT 现网策略模板 - 限速/优先级/ACL'],
+  verify:['HKT 验收测试标准 - 网络保障类','VIP 用户体验指标体系 - MOS/时延/丢包'],
+  delivery:['HKT 变更管理流程规范','HKT 灰度发布标准 - Change Management v3.1'],
+};
+
+function hvcScript_intent() {
+  const hasDetail = S.conversation === 'has_detail';
+  return hasDetail ? [
+    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 telecom 领域知识库...', delay:700 },
+    { icon:'think', text:'需求已明确：面向 HKT 的 VIP/VVIP 用户在特定场馆的体验保障。', delay:600 },
+    { icon:'search', text:'分析 HKT 现网架构：接入层(OLT/DSLAM) → 汇聚层(SR/BNG) → 核心层(CR)...', delay:1000 },
+    { icon:'found', text:'找到 HKT 网络拓扑文档，确认设备型号及组网结构。', sub:'Huawei MA5800 · Cisco ASR9000 · Juniper MX960', delay:700 },
+    { icon:'search', text:'分析各层设备的 QoS 调控能力...', delay:900 },
+    { icon:'found', text:'设备能力分析完成：支持优先级队列、流量整形、ACL 过滤、动态带宽调整。', sub:'关键能力: 层次化 QoS · HQoS · WRED', delay:600 },
+    { icon:'decide', text:'核心策略：基于用户 SLA 等级的 <span class="hl">端到端差异化保障</span>，从接入侧即标记优先级。', delay:800 },
+    { icon:'info', text:'策略覆盖：接入层 HQoS → 汇聚层队列调度 → 核心层 TE-FRR 快速收敛。', delay:500 },
+    { type:'confirm', icon:'done', text:'HKT 现网分析和保障策略已完成。', btnText:'确认策略，进入规划 →', delay:300 },
+  ] : [
+    { icon:'think', text:'收到需求："hvc保障agent"', delay:400 },
+    { icon:'think', text:'但我当前的信息量不足以理解具体场景。', delay:600 },
+    { icon:'search', text:'在知识库中搜索 "HVC" 相关定义...', delay:800 },
+    { icon:'found', text:'未找到明确匹配的业务场景。', sub:'需要更多上下文信息', delay:500 },
+    { icon:'decide', text:'信息不足，无法定位具体业务需求。', delay:600 },
+  ];
+}
+
+function hvcScript_planning() {
+  return [
+    { icon:'think', text:'基于 HKT 现有网络能力，拆解保障方案。', delay:500 },
+    { icon:'search', text:'参考 3GPP 网络切片标准和 ETSI NFV 架构...', delay:800 },
+    { icon:'found', text:'找到切片 + QoS 协同保障的最佳实践框架。', sub:'来源: 3GPP TS 23.501 · ETSI GS NFV 002', delay:600 },
+    { icon:'decide', text:'确定采用 <span class="hl">5 阶段方案</span>：需求分析 → 策略设计 → 现网适配 → 验证测试 → 灰度上线', delay:700 },
+    { icon:'search', text:'评估各阶段人力与工期...', delay:600 },
+    { icon:'found', text:'基于 HKT OSS/BSS 接口复杂度，预估 6 周交付。', sub:'团队配置: 网络工程师×2 · 系统集成×1 · QA×1', delay:500 },
+    { type:'decision', icon:'decide', text:'规划完成。', delay:300,
+      question:'选择实施方案？',
+      options:[
+        { label:'标准交付', desc:'6周，全流程覆盖', value:'standard' },
+        { label:'快速交付', desc:'4周，裁剪验证周期', value:'fast' },
+        { label:'分阶段交付', desc:'每2周交付一个能力', value:'phased' },
+      ],
+    },
+  ];
+}
+
+function hvcScript_execution() {
+  return [
+    { icon:'think', text:'进入设计实施阶段。首先定义保障粒度。', delay:500 },
+    { icon:'search', text:'设计用户 SLA 等级映射表...', delay:800 },
+    { icon:'found', text:'完成等级映射：VVIP → 金级 (PBR+HQoS) · VIP → 银级 (队列优先) · 普通 → 铜级 (尽力而为)', delay:600 },
+    { icon:'think', text:'设计场馆流量预测模型和动态阈值。', delay:500 },
+    { icon:'search', text:'参考历史赛事流量数据和场馆容量模型...', delay:700 },
+    { icon:'found', text:'完成模型：基于预售票数+历史同期数据，提前 2h 预测并预配资源。', delay:500 },
+    { icon:'decide', text:'决定采用 <span class="hl">预测+实时协同</span> 策略，Pre-config + Real-time adjust。', delay:700 },
+    { icon:'search', text:'开发 Agent 编排逻辑...', delay:800 },
+    { icon:'found', text:'Agent 核心流程：场馆事件触发 → SLA 匹配 → 设备策略推送 → 效果监控 → 动态调优。', delay:600 },
+    { type:'confirm', icon:'done', text:'实施设计完成。', btnText:'进入验证 →', delay:300 },
+    { icon:'done', text:'开发完成：新增 12 个策略模板、5 个编排流程、3 个监控面板。', delay:600 },
+  ];
+}
+
+function hvcScript_verify() {
+  return [
+    { icon:'think', text:'开始全面验证。', delay:500 },
+    { icon:'search', text:'搭建测试环境，模拟场馆高并发场景...', delay:800 },
+    { icon:'found', text:'模拟 50000 用户并发，其中 500 VIP/VVIP 混合流量。', delay:600 },
+    { icon:'search', text:'运行保障策略验证...', delay:900 },
+    { icon:'found', text:'结果：VIP 用户 MOS 保持 4.2+，丢包率 0.01%，时延 <20ms。', sub:'普通用户 MOS 3.1，无明显劣化', delay:600 },
+    { type:'decision', icon:'decide', text:'验证通过。', delay:300,
+      question:'选择上线策略？',
+      options:[
+        { label:'灰度上线', desc:'先接 1 个场馆验证再铺开', value:'canary' },
+        { label:'全量上线', desc:'所有场馆同时部署', value:'full' },
+        { label:'A/B 测试', desc:'新旧策略并行对比', value:'abtest' },
+      ],
+    },
+    { icon:'done', text:'验证完成，满足 HKT SLA 保障指标。', delay:600 },
+  ];
+}
+
+function hvcScript_delivery() {
+  return [
+    { icon:'think', text:'整理交付物。', delay:500 },
+    { icon:'search', text:'收集策略模板、编排脚本、监控看板、运维手册...', delay:700 },
+    { icon:'found', text:'归档完成：12 个策略模板、5 个编排流程、3 个 Grafana 看板、1 份运维手册。', delay:600 },
+    { type:'confirm', icon:'done', text:'全部交付物已就绪。', btnText:'确认交付完成 →', delay:300 },
+  ];
+}
+
+const PHASES_HVC = [
+  { id:'intent',   icon:'🔍', title:'需求分析', color:'#4f46e5', script: ()=>hvcScript_intent(),
+    assets:[{n:'HKT 现网分析报告',ext:'pdf',icon:'📄',size:'2.4 MB'},{n:'设备能力清单',ext:'xlsx',icon:'📊',size:'680 KB'},{n:'保障策略白皮书',ext:'docx',icon:'📋',size:'1.8 MB'}],
+    refs: HVC_REFS.intent },
+  { id:'planning', icon:'📋', title:'方案规划', color:'#8b5cf6', script: ()=>hvcScript_planning(),
+    assets:[{n:'项目计划书',ext:'docx',icon:'📋',size:'520 KB'},{n:'WBS 分解表',ext:'xlsx',icon:'📊',size:'168 KB'}],
+    refs: HVC_REFS.planning },
+  { id:'execution',icon:'⚡', title:'设计实施', color:'#ec4899', script: ()=>hvcScript_execution(),
+    assets:[{n:'策略模板库',ext:'zip',icon:'📁',size:'2.6 MB'},{n:'编排流程图',ext:'pdf',icon:'🏗',size:'1.2 MB'},{n:'Agent API 文档',ext:'html',icon:'📐',size:'680 KB'}],
+    refs: HVC_REFS.execution },
+  { id:'verify',   icon:'✅', title:'验证确认', color:'#10b981', script: ()=>hvcScript_verify(),
+    assets:[{n:'测试报告',ext:'pdf',icon:'📊',size:'980 KB'},{n:'性能对比报告',ext:'xlsx',icon:'📈',size:'420 KB'}],
+    refs: HVC_REFS.verify },
+  { id:'delivery', icon:'🎯', title:'交付完成', color:'#f59e0b', script: ()=>hvcScript_delivery(),
+    assets:[{n:'部署指南',ext:'pdf',icon:'📘',size:'720 KB'},{n:'运维手册',ext:'pdf',icon:'✅',size:'540 KB'}],
+    refs: HVC_REFS.delivery },
+];
+
 // ===== Phase definitions =====
 const PHASES = [
-  { id:'intent',   icon:'🔍', title:'意图理解', color:'#4f46e5', script: ()=>script_intent(), assets:[{n:'需求分析记录',ext:'pdf',icon:'📄',size:'1.2 MB'},{n:'业务场景说明',ext:'docx',icon:'📋',size:'680 KB'}] },
-  { id:'planning', icon:'📋', title:'需求规划', color:'#8b5cf6', script: ()=>script_planning(), assets:[{n:'项目计划书',ext:'docx',icon:'📋',size:'420 KB'},{n:'WBS分解表',ext:'xlsx',icon:'📊',size:'168 KB'}] },
-  { id:'execution',icon:'⚡', title:'执行实施', color:'#ec4899', script: ()=>script_execution(S.type==='append', S.type==='rework'), assets:[{n:'工程源码',ext:'zip',icon:'📁',size:'3.8 MB'},{n:'系统架构图',ext:'pdf',icon:'🏗',size:'892 KB'},{n:'接口文档',ext:'html',icon:'📐',size:'420 KB'}] },
-  { id:'verify',   icon:'✅', title:'验证确认', color:'#10b981', script: ()=>script_verify(S.type==='rework'), assets:[{n:'测试报告',ext:'pdf',icon:'📊',size:'680 KB'},{n:'性能报告',ext:'xlsx',icon:'📈',size:'340 KB'}] },
-  { id:'delivery', icon:'🎯', title:'交付完成', color:'#f59e0b', script: ()=>script_delivery(S.type==='rework'), assets:[{n:'部署指南',ext:'pdf',icon:'📘',size:'520 KB'},{n:'验收报告',ext:'pdf',icon:'✅',size:'240 KB'}] },
+  { id:'intent',   icon:'🔍', title:'意图理解', color:'#4f46e5', script: ()=>script_intent(), assets:[{n:'需求分析记录',ext:'pdf',icon:'📄',size:'1.2 MB'},{n:'业务场景说明',ext:'docx',icon:'📋',size:'680 KB'}],
+    refs:['行业知识库 - 电商订单管理系统业务说明','技术社区 - 配置管理系统设计指南(2025)','项目管理实践指南 - 分阶段方法'] },
+  { id:'planning', icon:'📋', title:'需求规划', color:'#8b5cf6', script: ()=>script_planning(), assets:[{n:'项目计划书',ext:'docx',icon:'📋',size:'420 KB'},{n:'WBS分解表',ext:'xlsx',icon:'📊',size:'168 KB'}],
+    refs:['项目管理实践指南 - 分阶段方法','相似项目工时数据 - CRM系统构建'] },
+  { id:'execution',icon:'⚡', title:'执行实施', color:'#ec4899', script: ()=>script_execution(S.type==='append', S.type==='rework'), assets:[{n:'工程源码',ext:'zip',icon:'📁',size:'3.8 MB'},{n:'系统架构图',ext:'pdf',icon:'🏗',size:'892 KB'},{n:'接口文档',ext:'html',icon:'📐',size:'420 KB'}],
+    refs:['公开行业报告 - 电商行业趋势(2025)','技术社区 - 订单系统架构最佳实践','开源参考 - 订单系统 v2.3'] },
+  { id:'verify',   icon:'✅', title:'验证确认', color:'#10b981', script: ()=>script_verify(S.type==='rework'), assets:[{n:'测试报告',ext:'pdf',icon:'📊',size:'680 KB'},{n:'性能报告',ext:'xlsx',icon:'📈',size:'340 KB'}],
+    refs:['需求清单 - 逐项核对记录','性能基准测试 - 行业标准 v3.1'] },
+  { id:'delivery', icon:'🎯', title:'交付完成', color:'#f59e0b', script: ()=>script_delivery(S.type==='rework'), assets:[{n:'部署指南',ext:'pdf',icon:'📘',size:'520 KB'},{n:'验收报告',ext:'pdf',icon:'✅',size:'240 KB'}],
+    refs:['部署手册 - DevOps 规范','验收检查清单 - 质量门禁标准'] },
 ];
 
 // ===== Render phase card =====
@@ -804,6 +978,43 @@ function renderAssets(idx, assets) {
       toast(`⬇ ${a.n}.${a.ext} 已下载`);
     };
     list.appendChild(el);
+  });
+}
+
+// ===== Interaction helpers =====
+function waitConfirm(container, label) {
+  return new Promise(r => {
+    const box = document.createElement('div'); box.className = 'ia-box';
+    const btn = document.createElement('button'); btn.className = 'ia-btn';
+    btn.textContent = label || '确认继续';
+    box.appendChild(btn); container.appendChild(box); sb();
+    setTimeout(() => { btn.disabled = true; r(); }, 2000);
+  });
+}
+
+function waitDecision(container, question, options) {
+  return new Promise(r => {
+    const box = document.createElement('div'); box.className = 'ia-box';
+    box.innerHTML = `<div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">${question}</div><div class="ia-list"></div>`;
+    const list = box.querySelector('.ia-list');
+    const picked = Math.floor(Math.random() * options.length);
+    options.forEach((opt, i) => {
+      const el = document.createElement('div'); el.className = 'ia-opt';
+      el.innerHTML = `<div class="ia-dot"></div><div class="ia-body"><div class="ia-l">${opt.label}</div>${opt.desc ? `<div class="ia-d">${opt.desc}</div>` : ''}</div>`;
+      el.onclick = () => {
+        list.querySelectorAll('.ia-opt').forEach(o => o.classList.add('disabled'));
+        el.classList.add('selected');
+        setTimeout(() => r(opt.value || opt.label), 350);
+      };
+      list.appendChild(el);
+    });
+    container.appendChild(box); sb();
+    setTimeout(() => {
+      const els = list.querySelectorAll('.ia-opt');
+      els.forEach(o => o.classList.add('disabled'));
+      els[picked].classList.add('selected');
+      setTimeout(() => r(options[picked].value || options[picked].label), 350);
+    }, 2000);
   });
 }
 
@@ -855,6 +1066,17 @@ async function execPhase(idx) {
         const subEl = div.querySelector('.ev-sub');
         if(subEl) { subEl.style.display = 'block'; requestAnimationFrame(() => subEl.style.opacity = '1'); sb(); }
       }
+
+      // Interaction: confirm or decision
+      if(ev.type === 'confirm') {
+        showTyp(false);
+        await waitConfirm(container, ev.btnText);
+        sb();
+      } else if(ev.type === 'decision') {
+        showTyp(false);
+        const choice = await waitDecision(container, ev.question, ev.options);
+        sb();
+      }
     }
 
     // Phase done
@@ -866,6 +1088,13 @@ async function execPhase(idx) {
       aEl.classList.add('show');
       const list=$('al-'+idx);
       if(list) {
+        // Show references if any
+        if(phase.refs && phase.refs.length) {
+          const refDiv=document.createElement('div'); refDiv.className='refs';
+          refDiv.innerHTML=`<div class="refs-title">📎 参考文档</div><div class="refs-list">${phase.refs.map(r=>`<span class="ref-item">📄 ${r}</span>`).join('')}</div>`;
+          aEl.insertBefore(refDiv, list);
+        }
+
         // Show spinner
         const spinner=document.createElement('div'); spinner.className='gen-spinner';
         spinner.innerHTML=`<div class="gs-ring"></div><div class="gs-text">📄 文件生成中<span id="gsd-${idx}"></span></div>`;
@@ -896,6 +1125,105 @@ async function startProcess(text) {
   S.running=true;
   dom.sendBtn.disabled=true;
   if(dom.sendBtn2) dom.sendBtn2.disabled=true;
+
+  // HVC detection and conversation management
+  if(text.toLowerCase().includes('hvc') || text.toLowerCase().includes('高价值客户')) {
+    const hasDetail = text.includes('HKT') || text.includes('vip') || text.includes('vvip') || text.includes('场馆') || text.includes('演唱会') || text.includes('保障');
+    if(!hasDetail && S.conversation !== 'has_detail') {
+      S.conversation = 'awaiting_detail';
+      dom.welcome.classList.add('shrink');
+      dom.ws.classList.add('show');
+      dom.wsBottom.style.display='block';
+      dom.chips.style.display='none';
+      addMsg('user', text);
+      await sleep(500);
+      showTyp(true);
+      await sleep(1200);
+      showTyp(false);
+      addMsg('agent', `<div class="msg-meta"><span class="dot"></span> SA · ${ts()}</div>
+        <div class="p-card" style="border-top:2px solid var(--amber);padding:12px 16px;font-size:14px;line-height:1.6">
+🤔 您输入的信息有点少，我不是很清楚您具体想要的是一个什么业务方面的 Agent 应用。<br><br>
+比如：<br>
+• 是哪个运营商/企业？（如 HKT）<br>
+• 要保障什么场景？（如体育场馆、演唱会）<br>
+• 保障哪类用户？（如 VIP、VVIP）<br><br>
+<span class="hl">请详细描述您的业务场景，我来帮您分析。</span></div>`);
+      sb();
+      dom.wsStatus.innerHTML=`<span class="d" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></span> WAITING · 等待补充信息`;
+      dom.statusOrigColor = '#d97706';
+      S.running=false;
+      dom.sendBtn.disabled=false;
+      if(dom.sendBtn2) dom.sendBtn2.disabled=false;
+      dom.input2.placeholder='请详细描述您的业务场景...';
+      return;
+    }
+    // Has detail or was prompted — run HVC flow
+    S.conversation = 'has_detail';
+    S.skill = 'telecom';
+    S.type = 'hvc';
+
+    dom.welcome.classList.add('shrink');
+    dom.ws.classList.add('show');
+    dom.wsBottom.style.display='block';
+    dom.chips.style.display='none';
+    addMsg('user', text);
+    await sleep(500);
+    showTyp(true);
+    await sleep(900);
+    showTyp(false);
+    addMsg('agent', `<div class="msg-meta"><span class="dot"></span> SA · ${ts()}</div>
+      <div class="p-card" style="border-top:2px solid var(--accent);padding:12px 16px;font-size:14px;line-height:1.6">
+📥 收到 HKT 高价值客户保障需求，正在分析...<br>
+       Skill：<strong>telecom · HVC Agent</strong></div>`);
+
+    dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">0</span>/<span id="phTot">${PHASES_HVC.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
+    startTimer();
+    S.phases = PHASES_HVC;
+    S.phaseTotal = PHASES_HVC.length;
+
+    for(let i=0; i<PHASES_HVC.length; i++) {
+      try {
+        const phEl=$('phTot'); if(phEl) phEl.textContent = PHASES_HVC.length;
+        const ph=$('phIdx'); if(ph) ph.textContent=i+1;
+        dom.wsBody.insertAdjacentHTML('beforeend', phaseCardHTML(PHASES_HVC[i], i));
+        sbToPhase(i);
+        await sleep(300);
+        await execPhase(i);
+        if(i < PHASES_HVC.length-1) { flowArrow(); sb(); }
+        await sleep(200);
+      } catch(e) {
+        toast('⚠️ Phase loop error: '+e.message);
+        console.error('startProcess loop error', i, e);
+      }
+    }
+
+    stopTimer();
+    const elapsed=$('timer')?$('timer').textContent:'00:00';
+    dom.wsStatus.innerHTML=`<span class="d" style="background:var(--green);box-shadow:0 0 6px var(--green)"></span> COMPLETED · ${PHASES_HVC.length}阶段 · ⏱ ${elapsed}`;
+    dom.wsStatus.style.color='#059669';
+
+    addMsg('agent', `<div class="msg-meta"><span class="dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></span> SA · ${ts()}</div>
+      <div class="final-summary">
+        <div class="fs-title">🎉 HVC Agent 全部完成 — 交付汇总</div>
+        <div class="fs-grid">
+          <div class="fs-item"><div class="num">${PHASES_HVC.length}</div><div class="label">阶段</div></div>
+          <div class="fs-item"><div class="num">${elapsed}</div><div class="label">总耗时</div></div>
+          <div class="fs-item"><div class="num">6</div><div class="label">设备类型</div></div>
+          <div class="fs-item"><div class="num">12+</div><div class="label">策略模板</div></div>
+        </div>
+        <div class="fs-dl">
+          <div class="dl-btn" onclick="toast('📁 正在打包全部源码...');setTimeout(()=>toast('✅ 已导出'),1200)">📁 下载全部资产</div>
+          <div class="dl-btn" onclick="toast('📄 正在导出运维手册...');setTimeout(()=>toast('✅ 已导出'),1200)">📄 下载运维手册</div>
+        </div>
+      </div>`);
+    sb();
+
+    S.running=false;
+    dom.sendBtn.disabled=false;
+    if(dom.sendBtn2) dom.sendBtn2.disabled=false;
+    dom.input2.placeholder='输入新需求继续...';
+    return;
+  }
 
   // Detect type
   S.type = 'new';
