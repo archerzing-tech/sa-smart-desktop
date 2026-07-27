@@ -982,6 +982,21 @@ function renderAssets(idx, assets) {
 }
 
 // ===== Interaction helpers =====
+let _resolveInput = null;
+dom.sendBtn2.addEventListener('click', () => {
+  if(_resolveInput) { const r = _resolveInput; _resolveInput = null; r(dom.input2.value); dom.input2.value = ''; }
+});
+dom.input2.addEventListener('keydown', e => {
+  if(e.key==='Enter'&&!e.shiftKey && _resolveInput) {
+    e.preventDefault(); const r = _resolveInput; _resolveInput = null; r(dom.input2.value); dom.input2.value = '';
+  }
+});
+
+function waitUserInput(hint) {
+  dom.input2.placeholder = hint || '输入信息后按 Enter...';
+  dom.sendBtn2.disabled = false;
+  return new Promise(r => { _resolveInput = r; });
+}
 function waitConfirm(container, label) {
   return new Promise(r => {
     const box = document.createElement('div'); box.className = 'ia-box';
@@ -1189,7 +1204,23 @@ async function startProcess(text) {
         sbToPhase(i);
         await sleep(300);
         await execPhase(i);
-        if(i < PHASES_HVC.length-1) { flowArrow(); sb(); }
+
+        // After each phase, wait for user to continue (except last phase)
+        if(i < PHASES_HVC.length-1) {
+          flowArrow();
+          dom.wsStatus.innerHTML=`<span class="d" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></span> WAITING · ${PHASES_HVC[i].title}完成，等待确认`;
+          S.running=false;
+          dom.sendBtn.disabled=false;
+          dom.sendBtn2.disabled=false;
+          const reply = await waitUserInput(`输入"继续"进入下一阶段 (${PHASES_HVC[i+1].title})...`);
+          addMsg('user', reply);
+          S.running=true;
+          dom.sendBtn.disabled=true;
+          dom.sendBtn2.disabled=true;
+          dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">${i+2}</span>/<span id="phTot">${PHASES_HVC.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
+          sb();
+          await sleep(300);
+        }
         await sleep(200);
       } catch(e) {
         toast('⚠️ Phase loop error: '+e.message);
