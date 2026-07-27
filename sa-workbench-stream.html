@@ -179,6 +179,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes es-in{from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)}}
 .ev-body{min-height:1.5em}
 
+.ev-content{margin:8px 0 4px 28px;border-radius:var(--radius-sm);overflow:hidden;animation:ec-in .4s cubic-bezier(.22,1,.36,1)}
+@keyframes ec-in{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)}}
+.ec-diagram{background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre;overflow-x:auto;color:var(--text)}
+.ec-code{background:#1a1a2e;color:#e2e8f0;border-radius:var(--radius-sm);padding:12px 16px;font-size:12px;line-height:1.6;overflow-x:auto}
+.ec-code pre{margin:0;white-space:pre;tab-size:2}
+.ec-code code{font-family:var(--mono)}
+.ec-code .kw{color:#c084fc}.ec-code .str{color:#86efac}.ec-code .cm{color:#64748b}.ec-code .fn{color:#60a5fa}.ec-code .tp{color:#fbbf24}
+.ec-summary{background:var(--accent-bg);border:1px solid rgba(79,70,229,.15);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;line-height:1.7;color:var(--text)}
+.ec-summary .ec-title{font-weight:600;font-size:11.5px;color:var(--accent);margin-bottom:4px;font-family:var(--mono);letter-spacing:.3px}
+.ec-flow{background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-family:var(--mono);font-size:11px;line-height:1.7;white-space:pre;color:var(--text)}
+
 .ia-box{margin:10px 0 4px 28px;animation:ia-in .35s cubic-bezier(.22,1,.36,1)}
 @keyframes ia-in{from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}}
 .ia-btn{
@@ -685,6 +696,18 @@ function evHTML(icon, text, sub) {
   return `<div class="ev"><div class="ev-icon">${icon}</div><div class="ev-body"><div class="ev-t">${text}</div>${sub ? `<div class="ev-sub">${sub}</div>` : ''}</div></div>`;
 }
 
+function renderContent(type, data, title) {
+  const d=document.createElement('div'); d.className='ev-content';
+  const cls='ec-'+type; let html='';
+  if(title) html+=`<div class="ec-title" style="font-weight:600;font-size:11px;color:var(--accent);margin-bottom:4px;font-family:var(--mono);letter-spacing:.3px">${title}</div>`;
+  if(type==='code') {
+    html+=`<div class="${cls}"><pre><code>${data.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre></div>`;
+  } else {
+    html+=`<div class="${cls}">${data}</div>`;
+  }
+  d.innerHTML=html; return d;
+}
+
 // ===== Realistic agent scripts per phase =====
 // Each script is an array of "events" that execute in sequence
 // Events: { icon, text, sub, delay, subAfter }
@@ -764,9 +787,52 @@ function script_execution(isAppend, isRework) {
     { icon:'think', text:'调研完成，进入架构设计。', delay:400 },
     { icon:'search', text:'参考订单管理系统的常见架构模式...', delay:800 },
     { icon:'found', text:'找到一个开源订单系统的架构说明，虽然版本较旧但核心思路可以借鉴。', sub:'参考项目版本: 2.3 · 发布于2023年', delay:700 },
-    { icon:'decide', text:'决定采用分层架构：<span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>', delay:800 },
+    { icon:'decide', text:'决定采用分层架构：<span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>', delay:800,
+      content:{ type:'diagram', title:'系统架构图',
+        data:`┌─────────────────────────────────────┐
+│        展示层 (React SPA)              │
+│  ┌─────┐ ┌─────┐ ┌─────┐              │
+│  │订单  │ │商品  │ │用户  │              │
+│  │管理  │ │管理  │ │管理  │              │
+│  └─────┘ └─────┘ └─────┘              │
+├─────────────────────────────────────┤
+│      应用层 (Node.js API Gateway)       │
+│  ┌──────────┐ ┌──────────────────┐    │
+│  │ REST API  │ │ WebSocket 推送   │    │
+│  └──────────┘ └──────────────────┘    │
+├─────────────────────────────────────┤
+│  领域层 (Domain + Workflow Engine)    │
+│  ┌────────┐ ┌────────┐ ┌────────┐   │
+│  │订单领域 │ │库存领域 │ │支付领域 │   │
+│  └────────┘ └────────┘ └────────┘   │
+├─────────────────────────────────────┤
+│     基础设施层 (DB/Cache/Queue)        │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐       │
+│  │PG  │ │Redis│ │Kafka│ │OSS  │       │
+│  └────┘ └────┘ └────┘ └────┘       │
+└─────────────────────────────────────┘` } },
     { type:'confirm', icon:'done', text:'架构方案确认完成，可以进入编码阶段。', btnText:'开始编码 →', delay:300 },
-    { icon:'done', text:'架构设计完成，开始编码实现、测试验证的自动化流程。', delay:600 },
+    { icon:'done', text:'架构设计完成，开始编码实现、测试验证的自动化流程。', delay:600,
+      content:{ type:'code', title:'核心服务示例 — OrderService.ts',
+        data:`class OrderService {
+  async create(dto: CreateOrderDTO): Promise<Order> {
+    const order = new Order(dto);
+    await this.stockValidator.validate(order.items);
+    const payment = await this.payment.process(order);
+    order.linkPayment(payment);
+    await this.repo.save(order);
+    this.eventBus.emit(new OrderCreatedEvent(order));
+    return order;
+  }
+
+  async cancel(id: string): Promise<void> {
+    const order = await this.repo.findById(id);
+    if (!order.canCancel()) throw new BusinessError('不可取消');
+    await this.payment.refund(order.paymentId);
+    order.markCancelled();
+    await this.repo.save(order);
+  }
+}` } },
   ];
 }
 
@@ -785,8 +851,16 @@ function script_verify(isRework) {
     );
   } else {
     steps.push(
-      { icon:'search', text:'运行性能测试，验证系统在高负载下的表现...', delay:900 },
-      { icon:'found', text:'性能数据：响应时间P99=187ms，TPS达到1240，符合预期指标。', delay:500 },
+    { icon:'search', text:'运行性能测试，验证系统在高负载下的表现...', delay:900 },
+    { icon:'found', text:'性能数据：响应时间P99=187ms，TPS达到1240，符合预期指标。', delay:500,
+      content:{ type:'summary', title:'📊 性能测试报告',
+        data:`<b>压测场景</b>：5000 并发用户 · 混合读写 (7:3)<br>
+<b>P99 响应时间</b>：187ms <span style="color:var(--green)">✓ 达标</span> (目标 &lt;200ms)<br>
+<b>TPS</b>：1240 req/s <span style="color:var(--green)">✓ 达标</span> (目标 &gt;1000)<br>
+<b>错误率</b>：0.02% <span style="color:var(--green)">✓ 达标</span><br>
+<b>CPU 峰值</b>：68% · <b>内存峰值</b>：1.2 GB<br>
+<hr style="border:none;border-top:1px solid rgba(79,70,229,.15);margin:6px 0">
+<span style="color:var(--text-secondary);font-size:11px">结论：系统性能满足设计指标，建议上线</span>` } },
     );
   }
   steps.push(
@@ -816,8 +890,16 @@ function script_delivery(isRework) {
     );
   } else {
     steps.push(
-      { icon:'done', text:'新系统采用蓝绿部署策略，零宕机上线。', delay:600 },
-      { icon:'info', text:'后续可考虑：多租户支持、国际化、审计日志增强等方向迭代。', delay:500 },
+    { icon:'done', text:'新系统采用蓝绿部署策略，零宕机上线。', delay:600,
+      content:{ type:'summary', title:'📦 交付清单',
+        data:`<table style="width:100%;font-size:11.5px;border-collapse:collapse">
+<tr><td style="padding:2px 6px">📁 工程源码</td><td style="padding:2px 6px;color:var(--text-secondary)">ZIP · 3.8 MB</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">🏗 系统架构图</td><td style="padding:2px 6px;color:var(--text-secondary)">PDF · 892 KB</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">📐 接口文档</td><td style="padding:2px 6px;color:var(--text-secondary)">HTML · 420 KB</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">📊 测试报告</td><td style="padding:2px 6px;color:var(--text-secondary)">PDF · 680 KB</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">📘 部署指南</td><td style="padding:2px 6px;color:var(--text-secondary)">PDF · 520 KB</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+</table>` } },
+    { icon:'info', text:'后续可考虑：多租户支持、国际化、审计日志增强等方向迭代。', delay:500 },
     );
   }
   steps.push({ type:'confirm', icon:'done', text:'交付物已全部就绪。', btnText:'确认交付完成 →', delay:300 });
@@ -883,7 +965,36 @@ function hvcScript_execution() {
     { icon:'found', text:'完成模型：基于预售票数+历史同期数据，提前 2h 预测并预配资源。', delay:500 },
     { icon:'decide', text:'决定采用 <span class="hl">预测+实时协同</span> 策略，Pre-config + Real-time adjust。', delay:700 },
     { icon:'search', text:'开发 Agent 编排逻辑...', delay:800 },
-    { icon:'found', text:'Agent 核心流程：场馆事件触发 → SLA 匹配 → 设备策略推送 → 效果监控 → 动态调优。', delay:600 },
+    { icon:'found', text:'Agent 核心流程：场馆事件触发 → SLA 匹配 → 设备策略推送 → 效果监控 → 动态调优。', delay:600,
+      content:{ type:'flow', title:'Agent 调度流程',
+        data:`┌──────────┐
+│  场馆事件  │
+│ (开赛/散场)│
+└─────┬────┘
+      ▼
+┌──────────────┐
+│  SLA 等级匹配  │
+│ VVIP→金级      │
+│ VIP →银级      │
+│ 普通→铜级      │
+└──────┬───────┘
+       ▼
+┌──────────────────┐
+│  设备策略推送      │
+│ HQoS/队列/ACL     │
+│ 预配置+实时调整    │
+└──────┬───────────┘
+       ▼
+┌──────────────────┐
+│  效果监控 (实时)   │
+│ MOS/时延/丢包率   │
+│ 阈值告警          │
+└──────┬───────────┘
+       ▼
+┌──────────┐
+│  动态调优  │
+│ (闭环反馈) │
+└──────────┘` } },
     { type:'confirm', icon:'done', text:'实施设计完成。', btnText:'进入验证 →', delay:300 },
     { icon:'done', text:'开发完成：新增 12 个策略模板、5 个编排流程、3 个监控面板。', delay:600 },
   ];
@@ -912,7 +1023,13 @@ function hvcScript_delivery() {
   return [
     { icon:'think', text:'整理交付物。', delay:500 },
     { icon:'search', text:'收集策略模板、编排脚本、监控看板、运维手册...', delay:700 },
-    { icon:'found', text:'归档完成：12 个策略模板、5 个编排流程、3 个 Grafana 看板、1 份运维手册。', delay:600 },
+    { icon:'found', text:'归档完成：12 个策略模板、5 个编排流程、3 个 Grafana 看板、1 份运维手册。', delay:600,
+      content:{ type:'summary', title:'📦 HVC 保障体系交付物',
+        data:`• <b>策略模板库</b> — 12 个模板 (限速/优先级/ACL/QoS)<br>
+• <b>编排流程</b> — 5 个自动化工作流 (事件→SLA→推送→监控→调优)<br>
+• <b>监控看板</b> — 3 个 Grafana 面板 (实时/历史/告警)<br>
+• <b>运维手册</b> — SLA 保障操作指南 + 故障处理 SOP<br>
+• 覆盖 <b>6 种设备类型</b> · 适配 <b>3 个网络层级</b>` } },
     { type:'confirm', icon:'done', text:'全部交付物已就绪。', btnText:'确认交付完成 →', delay:300 },
   ];
 }
@@ -1079,6 +1196,15 @@ async function execPhase(idx) {
         await sleep(subDelay);
         const subEl = div.querySelector('.ev-sub');
         if(subEl) { subEl.style.display = 'block'; requestAnimationFrame(() => subEl.style.opacity = '1'); sb(); }
+      }
+
+      // Show generated content block if present
+      if(ev.content) {
+        const contentDelay = ev.contentAfter || 600;
+        await sleep(contentDelay);
+        const cb = renderContent(ev.content.type, ev.content.data, ev.content.title);
+        container.appendChild(cb);
+        sb();
       }
 
       // Interaction: confirm or decision
