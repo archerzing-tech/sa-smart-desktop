@@ -592,12 +592,14 @@ const dom = {
 
 const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null, currentPhaseIdx:0, notifBusy:false };
 
+let _autoScroll = true;
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ts = () => new Date().toTimeString().slice(0, 8);
 
 function rand(min, max) { return Math.random() * (max - min) + min; }
 
-function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTo({ top: dom.wsBody.scrollHeight, behavior: 'smooth' }); }catch(e){} }); }
+function sb() { if(!_autoScroll) return; requestAnimationFrame(() => { try { dom.wsBody.scrollTo({ top: dom.wsBody.scrollHeight, behavior: 'smooth' }); }catch(e){} }); }
 
 function sbToPhase(idx) {
   requestAnimationFrame(() => {
@@ -1715,8 +1717,10 @@ dom.input2.addEventListener('input', function(){this.style.height='auto';this.st
 
 // Scroll lock: always at bottom
 dom.wsBody.addEventListener('scroll', function() {
-  if(this.scrollTop + this.clientHeight < this.scrollHeight - 8) {
-    this.scrollTop = this.scrollHeight - this.clientHeight;
+  if(this.scrollTop + this.clientHeight >= this.scrollHeight - 20) {
+    _autoScroll = true;
+  } else {
+    _autoScroll = false;
   }
 });
 
