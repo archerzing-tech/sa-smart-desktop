@@ -112,6 +112,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   background:var(--accent-bg);color:var(--accent);transition:all .3s
 }
 .p-hd .ps.done{background:var(--green-bg);color:var(--green)}
+.p-hd .skill-badge{font-size:9px;padding:1px 8px;border-radius:100px;background:#f3e8ff;color:#7c3aed;font-family:var(--mono);font-weight:600;letter-spacing:.2px;margin-right:4px;white-space:nowrap}
 .p-hd .pe{font-size:9px;color:var(--text-muted);transition:transform .3s}
 .p-hd .pe.open{transform:rotate(180deg)}
 .p-body{max-height:0;overflow:hidden;transition:max-height .45s,opacity .25s;opacity:0}
@@ -174,20 +175,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 .assets.show{max-height:600px;opacity:1;padding:10px 16px 14px;border-top-color:var(--border-light)}
 .assets-title{font-size:11px;font-weight:600;color:var(--text-muted);font-family:var(--mono);letter-spacing:.5px;margin-bottom:2px}
-.assets-list{display:flex;flex-wrap:wrap;gap:6px}
+.assets-list{display:flex;flex-wrap:wrap;gap:10px}
 .asset{
-  display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface-alt);
-  border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12px;
-  cursor:pointer;transition:all .2s
+  display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--surface-alt);
+  border-radius:var(--radius);border:1px solid var(--border);font-size:14px;
+  cursor:pointer;transition:all .2s;min-width:180px
 }
+.asset .ai{font-size:24px}
+.asset .an{font-weight:600;font-size:13px}
+.asset .as{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
 .asset:hover{background:var(--accent-bg);border-color:var(--accent)}
 .asset .ai{font-size:15px}
 .asset .an{font-weight:500}
 .asset .as{font-size:10px;color:var(--text-muted);font-family:var(--mono);margin-left:2px}
-.asset .dl{font-size:10px;color:var(--accent);font-family:var(--mono);margin-left:auto;opacity:0;transition:opacity .2s}
+.asset .dl{font-size:15px;color:var(--accent);font-family:var(--mono);margin-left:auto;opacity:0;transition:opacity .2s}
 .asset:hover .dl{opacity:1}
 .asset .ext{
-  font-size:8px;padding:1px 4px;border-radius:3px;font-family:var(--mono);font-weight:600;
+  font-size:10px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:600;
   text-transform:uppercase
 }
 .asset .ext.pdf{background:#fee2e2;color:#dc2626}
@@ -456,7 +460,7 @@ const dom = {
   typing: $('typingEl'), toast: $('toast'),
 };
 
-const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'' };
+const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'' };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ts = () => new Date().toTimeString().slice(0, 8);
@@ -498,53 +502,46 @@ function toast(msg) {
   toastTimer=setTimeout(()=>dom.toast.classList.remove('show'), 2000);
 }
 
-// ===== Notification system: tools / skills / write / doc / report =====
+// ===== Notification system: agent actions & tool calls =====
 const NOTIF_ACTIONS = {
   think:[
-    { label:'Agent.think', cat:'推理' }, { label:'Skill.reason', cat:'技能' },
-    { label:'Mind.map', cat:'思维' }
+    { label:'Agent.think', cat:'推理' }, { label:'Mind.map', cat:'思维' }
   ],
   search:[
-    { label:'Knowledge.search', cat:'工具' }, { label:'Skill.retrieve', cat:'技能' },
-    { label:'Doc.lookup', cat:'文档' }
+    { label:'Knowledge.search', cat:'工具' }, { label:'Doc.lookup', cat:'文档' }
   ],
   found:[
-    { label:'Knowledge.match', cat:'工具' }, { label:'Skill.compile', cat:'技能' },
-    { label:'Doc.capture', cat:'文档' }
+    { label:'Knowledge.match', cat:'工具' }, { label:'Doc.capture', cat:'文档' }
   ],
   retry:[
-    { label:'Agent.retry', cat:'工具' }, { label:'Skill.refine', cat:'技能' },
-    { label:'Source.switch', cat:'系统' }
+    { label:'Agent.retry', cat:'工具' }, { label:'Source.switch', cat:'系统' }
   ],
   fail:[
-    { label:'System.warn', cat:'系统' }, { label:'Skill.fallback', cat:'技能' }
+    { label:'System.warn', cat:'系统' }
   ],
   decide:[
-    { label:'Agent.decide', cat:'推理' }, { label:'Skill.evaluate', cat:'技能' },
-    { label:'Report.summarize', cat:'汇总' }
+    { label:'Agent.decide', cat:'推理' }, { label:'Report.summarize', cat:'汇总' }
   ],
   done:[
     { label:'Write.output', cat:'编码' }, { label:'Doc.archive', cat:'文档' },
-    { label:'Report.compile', cat:'汇总' }, { label:'Skill.assemble', cat:'技能' }
+    { label:'Report.compile', cat:'汇总' }
   ],
   wait:[
-    { label:'System.wait', cat:'系统' }, { label:'Skill.schedule', cat:'技能' }
+    { label:'System.wait', cat:'系统' }
   ],
   info:[
-    { label:'Skill.process', cat:'技能' }, { label:'Doc.organize', cat:'文档' },
-    { label:'Agent.analyze', cat:'工具' }, { label:'Sort.structure', cat:'整理' }
+    { label:'Doc.organize', cat:'文档' }, { label:'Sort.structure', cat:'整理' }
   ],
   ref:[
-    { label:'Knowledge.reference', cat:'工具' }, { label:'Doc.cite', cat:'文档' },
-    { label:'Skill.compare', cat:'技能' }
+    { label:'Knowledge.reference', cat:'工具' }, { label:'Doc.cite', cat:'文档' }
   ],
   skip:[
-    { label:'Agent.skip', cat:'工具' }, { label:'Skill.pass', cat:'技能' }
+    { label:'Agent.skip', cat:'工具' }
   ],
 };
 const NOTIF_ICONS = {
   think:'💭', search:'🔍', found:'📌', retry:'🔄', fail:'⚠️',
-  decide:'🤔', done:'✅', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️'
+  decide:'🤔', done:'✅', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️', skill:'🎯'
 };
 function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
@@ -610,7 +607,7 @@ function addMsg(type, html) {
 
 // ===== Event builders (realistic, no buzzwords) =====
 function evIcon(type) {
-  const m = { think:'💭', search:'🔍', found:'📌', retry:'🔄', fail:'⚠️', done:'✅', decide:'🤔', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️' };
+  const m = { think:'💭', search:'🔍', found:'📌', retry:'🔄', fail:'⚠️', done:'✅', decide:'🤔', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️', skill:'🎯' };
   return m[type] || '•';
 }
 
@@ -626,6 +623,7 @@ function evHTML(icon, text, sub) {
 
 function script_intent() {
   return [
+    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
     { icon:'think', text:'收到需求，先理解一下用户想要什么。', delay:600 },
     { icon:'think', text:'读了一遍，提到"电商订单管理"、"配置管理系统"… 核心诉求是构建一套新的业务系统。', delay:900 },
     { icon:'search', text:'在知识库中查找相关业务场景描述...', delay:800 },
@@ -644,9 +642,9 @@ function script_planning() {
     { icon:'found', text:'找到一个标准的分阶段方法：领域调研 → 架构设计 → 编码实现 → 测试验证 → 部署上线。', sub:'来源: 项目管理实践指南', delay:800 },
     { icon:'think', text:'这套框架结构清晰，覆盖了从0到1的完整链路。', delay:500 },
     { icon:'decide', text:'决定采用5阶段方案：<span class="hl">调研 → 设计 → 实现 → 测试 → 部署</span>', delay:700 },
-    { icon:'search', text:'估算一下各阶段的工作量和工期...', delay:900 },
-    { icon:'found', text:'找到一个类似项目的工时数据作为参考，做了适当调整。', sub:'参考项目: CRM系统构建 · 团队配置: 3人', delay:600 },
-    { icon:'done', text:'规划完成：5个阶段，预估<span class="hl">28人天</span>，建议3人团队并行推进。', delay:500 },
+    { icon:'search', text:'评估一下各阶段的工作量...', delay:700 },
+    { icon:'found', text:'找到一份相似项目的执行数据作为参考，做了适当调整。', delay:500 },
+    { icon:'done', text:'规划完成：确定5阶段执行方案，按 skill 流程推进。', delay:500 },
   ];
 }
 
@@ -752,6 +750,7 @@ function phaseCardHTML(phase, idx) {
       <div class="p-hd" onclick="toggleP(${idx})">
         <span class="pi">${phase.icon}</span>
         <span class="pt">${phase.title}</span>
+        <span class="skill-badge">${S.skill||'app-dev'}</span>
         <span class="ps" id="pst-${idx}">等待中</span>
         <span class="pe" id="pex-${idx}">▼</span>
       </div>
@@ -814,7 +813,7 @@ async function execPhase(idx) {
       const delay = ev.delay || rand(500,1200);
 
       // Contextual typing label
-      const labels = { think:'思考中', search:'搜索中', found:'获取结果', retry:'重试中', fail:'处理异常', decide:'决策中', done:'确认', wait:'等待', info:'分析中', ref:'查阅资料', skip:'跳过' };
+      const labels = { think:'思考中', search:'搜索中', found:'获取结果', retry:'重试中', fail:'处理异常', decide:'决策中', done:'确认', wait:'等待', info:'分析中', ref:'查阅资料', skip:'跳过', skill:'匹配skill' };
       showTyp(true, labels[ev.icon]||'处理中', (i+1)+'/'+events.length);
 
       // Fire tool-call notification
@@ -888,6 +887,10 @@ async function startProcess(text) {
   if(text.includes('新增')||text.includes('追加')) S.type='append';
   else if(text.includes('二次开发')||text.includes('现有')||text.includes('基础')) S.type='rework';
 
+  // Detect skill
+  S.skill = 'app-dev';
+  if(text.includes('HTML')||text.includes('原型')||text.includes('设计')) S.skill='huashu-design';
+
   // Transition view
   dom.welcome.classList.add('shrink');
   dom.ws.classList.add('show');
@@ -905,9 +908,8 @@ async function startProcess(text) {
 
   addMsg('agent', `<div class="msg-meta"><span class="dot"></span> SA · ${ts()}</div>
     <div class="p-card" style="border-top:2px solid var(--accent);padding:12px 16px;font-size:14px;line-height:1.6">
-      📥 收到需求，正在分析...<br>
-      类型：<strong>${S.type==='new'?'新业务构建':S.type==='append'?'功能追加':'二次开发'}</strong>
-    </div>`);
+📥 收到需求，正在分析...<br>
+       类型：<strong>${S.type==='new'?'新业务构建':S.type==='append'?'功能追加':'二次开发'}</strong> · Skill</div></div>`);
 
   dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">0</span>/<span id="phTot">${PHASES.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
   startTimer();

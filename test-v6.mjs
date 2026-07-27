@@ -6,7 +6,7 @@ import { createServer as netServer } from 'net';
 function fp(){return new Promise(r=>{const s=netServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p))})})}
 
 async function main(){
-  const h=readFileSync('D:\\work2026\\sa_workspace\\sa-workbench-enhanced.html','utf8');
+  const h=readFileSync('sa-workbench-enhanced.html','utf8');
   const port=await fp();
   const srv=createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html;charset=utf-8'});res.end(h)});
   await new Promise(r=>srv.listen(port,'127.0.0.1',r));
@@ -41,11 +41,11 @@ async function main(){
     if(done.length===5&&summary) console.log('✅ ALL PHASES COMPLETE');
     else console.log('❌ INCOMPLETE');
 
-    await p.screenshot({path:'D:\\work2026\\sa_workspace\\screenshot-end.png'});
+    await p.screenshot({path:'screenshot-end.png'});
     await br.close();srv.close();
   }catch(e){
     console.error('TEST FAIL:',e.message);
-    try{await p.screenshot({path:'D:\\work2026\\sa_workspace\\screenshot-err.png'})}catch(_){}
+    try{await p.screenshot({path:'screenshot-err.png'})}catch(_){}
     await br.close();srv.close();
   }
 }

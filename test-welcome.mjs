@@ -6,7 +6,7 @@ import { createServer as netServer } from 'net';
 function fp(){return new Promise(r=>{const s=netServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p))})})}
 
 async function main(){
-  const h=readFileSync('D:\\work2026\\sa_workspace\\sa-workbench-enhanced.html','utf8');
+  const h=readFileSync('sa-workbench-enhanced.html','utf8');
   const port=await fp();
   const srv=createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html;charset=utf-8'});res.end(h)});
   await new Promise(r=>srv.listen(port,'127.0.0.1',r));
@@ -40,7 +40,7 @@ async function main(){
   const pad = await inp.evaluate(el => getComputedStyle(el).padding);
   console.log('Input padding:', pad);
 
-  await p.screenshot({path:'D:\\work2026\\sa_workspace\\screenshot-welcome.png'});
+  await p.screenshot({path:'screenshot-welcome.png'});
   console.log('\nDone');
   await br.close();srv.close();
 }

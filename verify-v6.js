@@ -1,5 +1,5 @@
 const fs=require('fs');
-const h=fs.readFileSync('D:\\work2026\\sa_workspace\\sa-workbench-enhanced.html','utf8');
+const h=fs.readFileSync('sa-workbench-enhanced.html','utf8');
 const c=[
   ['SA SMART DESKTOP',h.includes('SA SMART DESKTOP')],
   ['DOCTYPE',h.includes('<!DOCTYPE')],
