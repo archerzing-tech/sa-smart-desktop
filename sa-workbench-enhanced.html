@@ -461,9 +461,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <span class="chip" onclick="setV('帮我构建一个电商订单管理的配置管理系统')">📦 电商订单系统</span>
       <span class="chip" onclick="setV('帮我在saas项目基础上新增用户行为分析功能')">📊 新增行为分析</span>
       <span class="chip" onclick="setV('帮我对现有CRM系统二次开发，新增客户分群管理')">🔄 CRM二次开发</span>
+      <span class="chip" onclick="setV('创建一个hvc保障agent，面向HKT的VIP/VVIP用户在体育场馆和演唱会等高密度场景下的网络体验保障')">📡 HVC 保障Agent</span>
     </div>
     <div class="welcome-footer">
-      <span class="wf-item"><span class="wf-dot green"></span><span class="wf-label">模型</span><span class="wf-val">GPT-4o</span></span>
+      <span class="wf-item">
+        <span class="wf-dot green"></span>
+        <span class="wf-label">模型</span>
+        <select id="modelSelect" style="border:none;background:transparent;font-size:12px;font-family:var(--mono);color:var(--text-muted);outline:none;cursor:pointer;max-width:120px">
+          <option value="GPT-4o" selected>GPT-4o</option>
+          <option value="GPT-4o-mini">GPT-4o-mini</option>
+          <option value="Claude 3.5 Sonnet">Claude 3.5 Sonnet</option>
+          <option value="Claude 3 Opus">Claude 3 Opus</option>
+          <option value="Gemini 2.0">Gemini 2.0</option>
+          <option value="DeepSeek-V3">DeepSeek-V3</option>
+          <option value="Qwen2.5-72B">Qwen2.5-72B</option>
+          <option value="GLM-4">GLM-4</option>
+        </select>
+      </span>
       <span class="wf-item"><span class="wf-dot purple"></span><span class="wf-label">引擎</span><span class="wf-val">SA v1.2.0</span></span>
     </div>
   </div>
@@ -982,21 +996,6 @@ function renderAssets(idx, assets) {
 }
 
 // ===== Interaction helpers =====
-let _resolveInput = null;
-dom.sendBtn2.addEventListener('click', () => {
-  if(_resolveInput) { const r = _resolveInput; _resolveInput = null; r(dom.input2.value); dom.input2.value = ''; }
-});
-dom.input2.addEventListener('keydown', e => {
-  if(e.key==='Enter'&&!e.shiftKey && _resolveInput) {
-    e.preventDefault(); const r = _resolveInput; _resolveInput = null; r(dom.input2.value); dom.input2.value = '';
-  }
-});
-
-function waitUserInput(hint) {
-  dom.input2.placeholder = hint || '输入信息后按 Enter...';
-  dom.sendBtn2.disabled = false;
-  return new Promise(r => { _resolveInput = r; });
-}
 function waitConfirm(container, label) {
   return new Promise(r => {
     const box = document.createElement('div'); box.className = 'ia-box';
@@ -1204,23 +1203,7 @@ async function startProcess(text) {
         sbToPhase(i);
         await sleep(300);
         await execPhase(i);
-
-        // After each phase, wait for user to continue (except last phase)
-        if(i < PHASES_HVC.length-1) {
-          flowArrow();
-          dom.wsStatus.innerHTML=`<span class="d" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></span> WAITING · ${PHASES_HVC[i].title}完成，等待确认`;
-          S.running=false;
-          dom.sendBtn.disabled=false;
-          dom.sendBtn2.disabled=false;
-          const reply = await waitUserInput(`输入"继续"进入下一阶段 (${PHASES_HVC[i+1].title})...`);
-          addMsg('user', reply);
-          S.running=true;
-          dom.sendBtn.disabled=true;
-          dom.sendBtn2.disabled=true;
-          dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">${i+2}</span>/<span id="phTot">${PHASES_HVC.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
-          sb();
-          await sleep(300);
-        }
+        if(i < PHASES_HVC.length-1) { flowArrow(); sb(); }
         await sleep(200);
       } catch(e) {
         toast('⚠️ Phase loop error: '+e.message);
