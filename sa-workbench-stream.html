@@ -599,7 +599,7 @@ const ts = () => new Date().toTimeString().slice(0, 8);
 
 function rand(min, max) { return Math.random() * (max - min) + min; }
 
-function sb() { if(!_autoScroll) return; requestAnimationFrame(() => { try { dom.wsBody.scrollTo({ top: dom.wsBody.scrollHeight, behavior: 'smooth' }); }catch(e){} }); }
+function sb() { if(!_autoScroll) return; requestAnimationFrame(() => { try { dom.wsBody.scrollTop = dom.wsBody.scrollHeight; }catch(e){} }); }
 
 function sbToPhase(idx) {
   requestAnimationFrame(() => {
