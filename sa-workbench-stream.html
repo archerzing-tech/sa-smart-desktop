@@ -90,12 +90,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .ws-status{font-size:11px;font-family:var(--mono);color:var(--text-muted);display:flex;align-items:center;gap:8px}
 .ws-status .d{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
 
-.ws-body{flex:1;overflow-y:auto;padding:4px 0 12px;min-height:0;scroll-behavior:smooth;display:flex;flex-direction:column-reverse;overflow-anchor:none}
+.ws-body{flex:1;overflow-y:auto;padding:4px 0 12px;min-height:0;scroll-behavior:smooth}
 .ws-body::-webkit-scrollbar{width:4px}
 .ws-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
 .msg{animation:msg-in .5s cubic-bezier(.22,1,.36,1)}
-@keyframes msg-in{from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)}}
+@keyframes msg-in{from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)}}
 .msg.user{
   float:right;clear:both;max-width:75%;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;
   padding:10px 16px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.55;
@@ -109,7 +109,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* Phase card */
 .p-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);animation:pc-in .55s cubic-bezier(.22,1,.36,1)}
 @keyframes pc-in{
-  from{opacity:0;transform:translateY(-20px)}
+  from{opacity:0;transform:translateY(20px)}
   to{opacity:1;transform:translateY(0)}
 }
 @media(max-width:480px){.p-hd{padding:10px 12px;gap:6px}.p-hd .pt{font-size:12px}}
@@ -142,7 +142,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   animation:ev-line .45s cubic-bezier(.22,1,.36,1)
 }
 @keyframes ev-in{
-  0%{opacity:0;transform:translateY(-14px);background:var(--accent-bg)}
+  0%{opacity:0;transform:translateY(14px);background:var(--accent-bg)}
   45%{background:var(--accent-bg)}
   100%{opacity:1;transform:translateY(0);background:transparent}
 }
@@ -246,7 +246,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .asset .ext.png{background:#fce7f3;color:#db2777}
 
 .fa{text-align:center;padding:10px 0 6px;color:var(--text-muted);font-size:10px;font-family:var(--mono);letter-spacing:2px;clear:both;animation:fa-in .4s cubic-bezier(.22,1,.36,1)}
-@keyframes fa-in{from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}}
+@keyframes fa-in{from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)}}
 
 
 
@@ -537,7 +537,7 @@ const ts = () => new Date().toTimeString().slice(0, 8);
 
 function rand(min, max) { return Math.random() * (max - min) + min; }
 
-function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTo({ top: 0, behavior: 'smooth' }); }catch(e){} }); }
+function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTo({ top: dom.wsBody.scrollHeight, behavior: 'smooth' }); }catch(e){} }); }
 
 function sbToPhase(idx) {
   requestAnimationFrame(() => {
@@ -973,7 +973,7 @@ function phaseCardHTML(phase, idx) {
 }
 
 function flowArrow() {
-  const d=document.createElement('div'); d.className='fa'; d.textContent='▲ 下一阶段';
+  const d=document.createElement('div'); d.className='fa'; d.textContent='▼ 下一阶段';
   dom.wsBody.appendChild(d); sb();
 }
 
