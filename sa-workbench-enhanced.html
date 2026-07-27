@@ -556,7 +556,7 @@ const dom = {
   typing: $('typingEl'), toast: $('toast'),
 };
 
-const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null, currentPhaseIdx:0 };
+const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null, currentPhaseIdx:0, notifBusy:false };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ts = () => new Date().toTimeString().slice(0, 8);
@@ -648,16 +648,22 @@ function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 const CAT_CLASS = { '工具':'tool', '技能':'skill', '文档':'doc', '编码':'code', '汇总':'report', '系统':'system', '推理':'think', '思维':'think', '整理':'doc' };
 const BADGE_CLASS = { '工具':'tool', '技能':'skill', '文档':'doc', '编码':'code', '汇总':'report', '系统':'system' };
 
+function closeNotif(el) {
+  if(!el || !el.parentNode) return;
+  el.classList.add('out');
+  setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300);
+}
+
 function notify(icon, text) {
+  if(S.notifBusy) return null;
   const stack = $('notifStack');
-  if(!stack) return;
+  if(!stack) return null;
 
   const action = pick(NOTIF_ACTIONS[icon]||[{label:'Agent.run', cat:'工具'}]);
   const time = new Date().toTimeString().slice(0,8);
   const catClass = CAT_CLASS[action.cat]||'tool';
-  const showBadge = Math.random() > 0.4;  // ~60% get a badge
+  const showBadge = Math.random() > 0.4;
 
-  // Vary text clamp: 40% clamp1, 35% clamp2, 25% full
   const clampClass = Math.random() < 0.4 ? 'clamp1' : (Math.random() < 0.54 ? 'clamp2' : 'full');
 
   const el = document.createElement('div');
@@ -671,16 +677,12 @@ function notify(icon, text) {
     </div>`;
   stack.appendChild(el);
 
-  // Auto-remove after 5s with slide-out
-  setTimeout(() => {
-    if(el.parentNode) { el.classList.add('out'); setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300); }
-  }, 5000);
-
   // Cap at 6 visible — remove oldest immediately
   while(stack.children.length > 6) {
     const first = stack.children[0];
     if(first && first.parentNode) first.parentNode.removeChild(first);
   }
+  return el;
 }
 
 function dismissNotif(btn) {
@@ -692,6 +694,7 @@ function dismissNotif(btn) {
 
 // ===== MCP tool call =====
 async function mcpCall(container, tool, args, label) {
+  S.notifBusy = true;
   const stack = $('notifStack');
   if(stack) {
     try {
@@ -729,6 +732,7 @@ async function mcpCall(container, tool, args, label) {
   }
   row.classList.add('done');
   row.querySelector('.mcp-status').textContent='✓';
+  S.notifBusy = false;
   sb();
 }
 
@@ -1161,7 +1165,8 @@ async function execPhase(idx) {
       showTyp(true, labels[ev.icon]||'处理中', (i+1)+'/'+events.length);
 
       // Fire tool-call notification
-      try { notify(ev.icon, (ev.text||'').replace(/<[^>]*>/g,'').trim()); }catch(e){}
+      let notifEl = null;
+      try { notifEl = notify(ev.icon, (ev.text||'').replace(/<[^>]*>/g,'').trim()); }catch(e){}
 
       // Wait before showing the event
       await sleep(delay);
@@ -1172,6 +1177,7 @@ async function execPhase(idx) {
       const div = document.createElement('div'); div.className='ev';
       div.innerHTML = `<div class="ev-icon">${evIcon(ev.icon)}</div><div class="ev-body"><div class="ev-t">${ev.text||''}</div>${ev.sub ? `<div class="ev-sub" style="margin-left:28px;display:none">${ev.sub}</div>` : ''}</div>`;
       container.appendChild(div);
+      if(notifEl) closeNotif(notifEl);
       sb();
 
       // Show sub-text after a moment if present
@@ -1191,6 +1197,9 @@ async function execPhase(idx) {
         showTyp(false);
         const choice = await waitDecision(container, ev.question, ev.options);
         sb();
+      } else if(ev.type === 'mcp') {
+        showTyp(false);
+        await mcpCall(container, ev.tool, ev.args, ev.label);
       }
     }
 
