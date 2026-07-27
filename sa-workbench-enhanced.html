@@ -178,6 +178,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes es-in{from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)}}
 .ev-body{min-height:1.5em}
 
+/* Thinking bubble — shown inside conversation while AI processes */
+.thinking-bubble{clear:both;margin-bottom:10px;animation:tb-in .35s cubic-bezier(.22,1,.36,1)}
+@keyframes tb-in{from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)}}
+.thinking-bubble .tb-inner{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 18px 4px;box-shadow:var(--shadow);max-width:75%;float:left}
+.thinking-bubble .tb-avatar{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;animation:tb-pulse 2s ease-in-out infinite}
+@keyframes tb-pulse{0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.35)} 50%{box-shadow:0 0 0 8px rgba(79,70,229,0)}}
+.thinking-bubble .tb-body{display:flex;flex-direction:column;gap:3px}
+.thinking-bubble .tb-label{font-size:12px;color:var(--text-secondary);font-weight:500;display:flex;align-items:center;gap:8px}
+.thinking-bubble .tb-dots{display:inline-flex;gap:3px}
+.thinking-bubble .tb-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:tb-dot 1.4s infinite both}
+.thinking-bubble .tb-dots span:nth-child(1){animation-delay:0s}
+.thinking-bubble .tb-dots span:nth-child(2){animation-delay:.2s}
+.thinking-bubble .tb-dots span:nth-child(3){animation-delay:.4s}
+.thinking-bubble .tb-dots span:nth-child(4){animation-delay:.6s}
+@keyframes tb-dot{0%,80%,100%{transform:scale(.6);opacity:.3} 40%{transform:scale(1);opacity:1}}
+.thinking-bubble .tb-step{font-size:10px;color:var(--text-muted);font-family:var(--mono);display:inline-block}
+
 .ia-box{margin:10px 0 4px 28px;animation:ia-in .35s cubic-bezier(.22,1,.36,1)}
 @keyframes ia-in{from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}}
 .ia-btn{
@@ -564,14 +581,20 @@ function rand(min, max) { return Math.random() * (max - min) + min; }
 
 function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTop = dom.wsBody.scrollHeight; }catch(e){} }); }
 
+// Thinking bubble — shown inside conversation while AI processes
+let _tbEl = null;
 function showTyp(on, label, step) {
-  dom.typing.classList.toggle('hidden', !on);
-  if(on && label) {
-    const lb=$('typingLabel'); if(lb) lb.textContent = label;
-    const st=$('typingStep');
-    if(st) {
-      if(step) { st.textContent = '步骤 ' + step; st.style.display = 'inline-block'; }
-      else { st.style.display = 'none'; }
+  if(on) {
+    if(!_tbEl) {
+      _tbEl = document.createElement('div'); _tbEl.className = 'thinking-bubble';
+      _tbEl.innerHTML = `<div class="tb-inner"><div class="tb-avatar">⚡</div><div class="tb-body"><div class="tb-label"><span class="tb-text">${label||'思考中'}</span><span class="tb-dots"><span></span><span></span><span></span><span></span></span></div></div></div>`;
+      dom.wsBody.appendChild(_tbEl); sb();
+    }
+    const txt = _tbEl.querySelector('.tb-text');
+    if(txt && label) txt.textContent = label;
+  } else {
+    if(_tbEl && _tbEl.parentNode) {
+      _tbEl.parentNode.removeChild(_tbEl); _tbEl = null;
     }
   }
 }
