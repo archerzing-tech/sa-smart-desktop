@@ -46,7 +46,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .input-box textarea{
   flex:1;border:none;outline:none;background:transparent;padding:18px 20px;
   font-size:15px;font-family:var(--font);color:var(--text);resize:none;
-  min-height:28px;max-height:140px;line-height:1.55
+  min-height:28px;max-height:130px;line-height:1.55;overflow-y:auto
 }
 .input-box textarea::placeholder{color:var(--text-muted)}
 .input-box button{
@@ -325,16 +325,27 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 @keyframes ti-in{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)}}
 .typing-a{
-  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
   background:linear-gradient(135deg,var(--accent),var(--accent-light));
   display:flex;align-items:center;justify-content:center;
-  font-size:9px;color:#fff;font-weight:700;letter-spacing:0;
+  font-size:10px;color:#fff;font-weight:700;letter-spacing:0;position:relative;
   animation:ta-pulse 2s ease-in-out infinite
+}
+.typing-a::after{
+  content:'';position:absolute;width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--accent);opacity:0;
+  animation:bw-wave 2.4s ease-out infinite
 }
 @keyframes ta-pulse{
   0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.35)}
   50%{box-shadow:0 0 0 8px rgba(79,70,229,0)}
 }
+@keyframes bw-wave{
+  0%{transform:scale(.7);opacity:.6}
+  100%{transform:scale(1.6);opacity:0}
+}
+.typing-a.think::after{animation:bw-wave 1.8s ease-out infinite}
+.typing-a.think{animation:ta-pulse 1.2s ease-in-out infinite}
 .typing-l{font-size:11px;font-family:var(--mono);color:var(--text-muted);display:flex;align-items:center;gap:8px}
 .typing-d{display:inline-flex;gap:4px}
 .typing-d span{
@@ -355,6 +366,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   font-family:var(--mono);letter-spacing:.3px;animation:tl-in .3s ease-out
 }
 @keyframes tl-in{from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)}}
+
+/* MCP write simulation */
+.mcp-write{display:flex;align-items:center;gap:10px;padding:5px 10px 5px 12px;margin:2px 0;border-radius:var(--radius-sm);animation:mcp-in .35s ease-out;font-size:11.5px;font-family:var(--mono)}
+@keyframes mcp-in{from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)}}
+.mcp-w .mcp-icon{flex-shrink:0;width:18px;text-align:center;font-size:12px}
+.mcp-w .mcp-file{color:var(--text-secondary);flex:1}
+.mcp-w .mcp-file .fn{color:var(--accent);font-weight:500}
+.mcp-w .mcp-bar{flex-shrink:0;width:60px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.mcp-w .mcp-bar .mcp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:2px;width:0%;transition:width .15s linear}
+.mcp-w .mcp-status{font-size:10px;color:var(--text-muted);width:32px;text-align:right}
+.mcp-w.done{color:var(--green)}
+.mcp-w.done .mcp-file .fn{color:var(--green)}
+.mcp-w.done .mcp-bar{background:var(--green-bg)}
+.mcp-w.done .mcp-bar .mcp-fill{background:var(--green);width:100%!important}
+.mcp-w.done .mcp-status{color:var(--green)}
 
 .ws-bottom{flex-shrink:0;padding:10px 0 16px;border-top:1px solid var(--border-light)}
 .ws-input{
@@ -564,7 +590,7 @@ const dom = {
   typing: $('typingEl'), toast: $('toast'),
 };
 
-const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null };
+const S = { running:false, timer:null, start:0, phaseTotal:0, phases:[], type:'', skill:'', conversation:null, currentPhaseIdx:0 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ts = () => new Date().toTimeString().slice(0, 8);
@@ -633,6 +659,9 @@ const NOTIF_ACTIONS = {
   wait:[
     { label:'System.wait', cat:'系统' }
   ],
+  write:[
+    { label:'MCP.write', cat:'编码' }, { label:'File.generate', cat:'工具' }
+  ],
   info:[
     { label:'Doc.organize', cat:'文档' }, { label:'Sort.structure', cat:'整理' }
   ],
@@ -645,7 +674,7 @@ const NOTIF_ACTIONS = {
 };
 const NOTIF_ICONS = {
   think:'💭', search:'🔍', found:'📌', retry:'🔄', fail:'⚠️',
-  decide:'🤔', done:'✅', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️', skill:'🎯'
+  decide:'🤔', done:'✅', wait:'⏳', info:'ℹ️', ref:'📎', skip:'⏭️', skill:'🎯', write:'✍️'
 };
 function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
@@ -729,6 +758,155 @@ function renderContent(type, data, title) {
     html+=`<div class="${cls}">${data}</div>`;
   }
   d.innerHTML=html; return d;
+}
+
+// ===== MCP write simulation =====
+const THINK_STAGES = {
+  think:['理解上下文...','关联知识库...','推理中...','综合判断...','得出结论...'],
+  search:['构建查询...','检索索引...','匹配结果...','排序相关度...'],
+  decide:['评估选项...','权衡利弊...','决策中...'],
+};
+
+async function mcpWrite(icon, filename, ext) {
+  const stack = $('notifStack');
+  if(stack) {
+    try {
+      const action = { label:'MCP.write', cat:'编码' };
+      const time = new Date().toTimeString().slice(0,8);
+      const el = document.createElement('div'); el.className='notif cat-code';
+      el.innerHTML = `<div class="notif-close" onclick="dismissNotif(this)">✕</div>
+        <div class="notif-icon">✍️</div>
+        <div class="notif-body">
+          <div class="notif-header"><span class="notif-tool">MCP.write()</span><span class="notif-time">${time}</span></div>
+          <div class="notif-text">${filename}.${ext}</div>
+          <div class="notif-badge tool">写入</div>
+        </div>`;
+      stack.appendChild(el);
+      const total = rand(2000,4000), steps = 20;
+      for(let s=1; s<=steps; s++) {
+        await sleep(total/steps);
+        const pct = Math.round(s/steps*100);
+        el.querySelector('.notif-text').textContent = `${filename}.${ext}  ${pct}%`;
+      }
+      el.querySelector('.notif-text').textContent = `✓ ${filename}.${ext}`;
+      el.style.borderLeftColor = 'var(--green)';
+      setTimeout(() => { if(el.parentNode) { el.classList.add('out'); setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el)},300); } }, 2000);
+      while(stack.children.length > 6) { const f=stack.children[0]; if(f&&f.parentNode)f.parentNode.removeChild(f); }
+    }catch(e){}
+  }
+  // Inline progress bar inside phase assets
+  const container = document.querySelector(`#al-${S.currentPhaseIdx}`);
+  if(!container) return;
+  const row=document.createElement('div'); row.className='mcp-w';
+  row.innerHTML=`<span class="mcp-icon">${icon||'📄'}</span><span class="mcp-file"><span class="fn">${filename}.${ext}</span></span><span class="mcp-bar"><span class="mcp-fill"></span></span><span class="mcp-status">0%</span>`;
+  container.appendChild(row);
+  sb();
+  const total=rand(2500,4500), steps=20;
+  for(let s=1; s<=steps; s++) {
+    await sleep(total/steps);
+    const pct=Math.round(s/steps*100);
+    row.querySelector('.mcp-fill').style.width=pct+'%';
+    row.querySelector('.mcp-status').textContent=pct+'%';
+  }
+  row.classList.add('done');
+  row.querySelector('.mcp-status').textContent='✓';
+  sb();
+}
+
+// ===== MCP tool call (generic) =====
+async function mcpCall(container, tool, args, label) {
+  const stack = $('notifStack');
+  if(stack) {
+    try {
+      const time = new Date().toTimeString().slice(0,8);
+      const el = document.createElement('div'); el.className='notif cat-code';
+      el.innerHTML = `<div class="notif-close" onclick="dismissNotif(this)">✕</div>
+        <div class="notif-icon">🔧</div>
+        <div class="notif-body">
+          <div class="notif-header"><span class="notif-tool">${tool}()</span><span class="notif-time">${time}</span></div>
+          <div class="notif-text">${args || label || ''}</div>
+          <div class="notif-badge tool">执行</div>
+        </div>`;
+      stack.appendChild(el);
+      const total = rand(2000,4500), steps = 15;
+      for(let s=1; s<=steps; s++) {
+        await sleep(total/steps);
+        const pct = Math.round(s/steps*100);
+        if(el.querySelector('.notif-text')) el.querySelector('.notif-text').textContent = `${label || tool}  ${pct}%`;
+      }
+      if(el.querySelector('.notif-text')) el.querySelector('.notif-text').textContent = `✓ ${label || tool}`;
+      el.style.borderLeftColor = 'var(--green)';
+      setTimeout(() => { if(el.parentNode) { el.classList.add('out'); setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el)},300); } }, 2000);
+      while(stack.children.length > 6) { const f=stack.children[0]; if(f&&f.parentNode)f.parentNode.removeChild(f); }
+    }catch(e){}
+  }
+  // Inline row
+  const row=document.createElement('div'); row.className='mcp-w';
+  row.innerHTML=`<span class="mcp-icon">🔧</span><span class="mcp-file"><span class="fn">${label || tool}</span>${args ? `<span style="color:var(--text-muted);font-size:10px;margin-left:6px">${args}</span>` : ''}</span><span class="mcp-bar"><span class="mcp-fill"></span></span><span class="mcp-status">0%</span>`;
+  container.appendChild(row);
+  sb();
+  const total=rand(3000,5500), steps=20;
+  for(let s=1; s<=steps; s++) {
+    await sleep(total/steps);
+    const pct=Math.round(s/steps*100);
+    row.querySelector('.mcp-fill').style.width=pct+'%';
+    row.querySelector('.mcp-status').textContent=pct+'%';
+  }
+  row.classList.add('done');
+  row.querySelector('.mcp-status').textContent='✓';
+  sb();
+}
+
+// ===== Deploy script =====
+function script_deploy() {
+  return [
+    { icon:'skill', text:'进入<span class="hl">部署上线</span>阶段。先扫描目标环境状态...', delay:700 },
+    { icon:'search', text:'Env.scan — 连接目标服务器，检测运行环境...', delay:600,
+      tool:'Env.scan', type:'mcp', label:'环境扫描', args:'target: production-01' },
+    { icon:'found', text:'环境检测完成：<span class="ok">Ubuntu 22.04 · Node 20 · Nginx 1.24 · Redis 7 · PG 16</span>',
+      sub:'磁盘剩余 42% · 内存 8G/16G · CPU 4核', delay:500,
+      content:{ type:'summary', title:'🖥 环境概览',
+        data:`<table style="width:100%;font-size:11.5px;border-collapse:collapse">
+<tr><td style="padding:2px 6px">OS</td><td style="padding:2px 6px;color:var(--text-secondary)">Ubuntu 22.04.3 LTS</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">Runtime</td><td style="padding:2px 6px;color:var(--text-secondary)">Node.js v20.11.0</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">Web</td><td style="padding:2px 6px;color:var(--text-secondary)">Nginx 1.24.0</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">DB</td><td style="padding:2px 6px;color:var(--text-secondary)">PostgreSQL 16.1</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+<tr><td style="padding:2px 6px">Cache</td><td style="padding:2px 6px;color:var(--text-secondary)">Redis 7.2.4</td><td style="padding:2px 6px;color:var(--green)">✓</td></tr>
+</table>` } },
+    { icon:'think', text:'环境就绪，开始打包部署。', delay:400 },
+    { type:'mcp', icon:'write', tool:'Build.package', label:'打包工程代码', args:'--mode production --zip', delay:800 },
+    { type:'mcp', icon:'write', tool:'Deploy.push', label:'推送至目标服务器', args:'scp → 192.168.1.100:/opt/app', delay:600 },
+    { type:'mcp', icon:'write', tool:'Deploy.extract', label:'解压部署包', args:'/opt/app/release-v2.1.0', delay:700 },
+    { type:'mcp', icon:'write', tool:'Service.start', label:'启动服务', args:'pm2 start ecosystem.config.js', delay:500 },
+    { type:'mcp', icon:'write', tool:'Health.check', label:'健康检查', args:'GET /api/health → 200 OK', delay:600 },
+    { icon:'done', text:'✅ 部署完成，系统已上线运行。', delay:400,
+      content:{ type:'summary', title:'🚀 上线结果',
+        data:`<b>状态</b>：<span style="color:var(--green)">全部正常</span><br>
+<b>服务地址</b>：<span style="font-family:var(--mono);font-size:11px">https://app.example.com</span><br>
+<b>响应时间</b>：P50 12ms · P99 45ms<br>
+<b>健康检查</b>：5/5 通过` } },
+  ];
+}
+
+// ===== HVC deploy script =====
+function hvcScript_deploy() {
+  return [
+    { icon:'skill', text:'进入<span class="hl">灰度上线</span>阶段。先检测现网设备状态...', delay:700 },
+    { icon:'search', text:'Config.pull — 拉取现网设备当前配置快照...', delay:800 },
+    { icon:'found', text:'快照完成：Huawei MA5800 · Cisco ASR9000 · Juniper MX960 配置已备份。', delay:500 },
+    { type:'mcp', icon:'write', tool:'Config.generate', label:'生成灰度策略配置', args:'场馆: HK-Coliseum · 比例: 30%', delay:900 },
+    { type:'mcp', icon:'write', tool:'Deploy.push', label:'推送至网管设备', args:'NMS → MA5800/ASR9000', delay:700 },
+    { type:'mcp', icon:'write', tool:'Config.apply', label:'应用配置（原子化）', args:'commit confirm 300s', delay:800 },
+    { type:'mcp', icon:'write', tool:'Monitor.watch', label:'观察业务指标', args:'MOS/时延/丢包率 · 5min窗口', delay:1000 },
+    { icon:'found', text:'灰度观察完成：VIP 用户 MOS 4.3，丢包率 0.008%，指标正常。', delay:500 },
+    { type:'mcp', icon:'write', tool:'Config.full', label:'全量下发配置', args:'剩余 70% 设备', delay:800 },
+    { icon:'done', text:'✅ 灰度上线完成，所有场馆已全量部署。', delay:400,
+      content:{ type:'summary', title:'🚀 上线结果',
+        data:`<b>覆盖场馆</b>：HK-Coliseum · HK-Exhibition · HK-Stadium<br>
+<b>设备数</b>：18 台<br>
+<b>上线方式</b>：灰度 30% → 观察 5min → 全量<br>
+<b>状态</b>：<span style="color:var(--green)">全部正常</span>` } },
+  ];
 }
 
 // ===== Realistic agent scripts per phase =====
@@ -1073,6 +1251,9 @@ const PHASES_HVC = [
   { id:'delivery', icon:'🎯', title:'交付完成', color:'#f59e0b', script: ()=>hvcScript_delivery(),
     assets:[{n:'部署指南',ext:'pdf',icon:'📘',size:'720 KB'},{n:'运维手册',ext:'pdf',icon:'✅',size:'540 KB'}],
     refs: HVC_REFS.delivery },
+  { id:'deploy', icon:'🚀', title:'灰度上线', color:'#dc2626', script: ()=>hvcScript_deploy(),
+    assets:[{n:'灰度上线报告',ext:'pdf',icon:'📊',size:'480 KB'},{n:'设备配置备份',ext:'zip',icon:'📁',size:'1.2 MB'}],
+    refs:['HKT 变更管理流程规范','HKT 灰度发布标准 - Change Management v3.1'] },
 ];
 
 // ===== Phase definitions =====
@@ -1087,6 +1268,9 @@ const PHASES = [
     refs:['需求清单 - 逐项核对记录','性能基准测试 - 行业标准 v3.1'] },
   { id:'delivery', icon:'🎯', title:'交付完成', color:'#f59e0b', script: ()=>script_delivery(S.type==='rework'), assets:[{n:'部署指南',ext:'pdf',icon:'📘',size:'520 KB'},{n:'验收报告',ext:'pdf',icon:'✅',size:'240 KB'}],
     refs:['部署手册 - DevOps 规范','验收检查清单 - 质量门禁标准'] },
+  { id:'deploy', icon:'🚀', title:'部署上线', color:'#dc2626', script: ()=>script_deploy(),
+    assets:[{n:'上线报告',ext:'pdf',icon:'📊',size:'380 KB'},{n:'Nginx 配置',ext:'zip',icon:'📁',size:'12 KB'}],
+    refs:['DevOps 部署规范 - 全链路自动化','健康检查标准 - HTTP/TCP/GRPC'] },
 ];
 
 // ===== Render phase card =====
@@ -1196,14 +1380,29 @@ async function execPhase(idx) {
       const delay = ev.delay || rand(500,1200);
 
       // Contextual typing label
-      const labels = { think:'思考中', search:'搜索中', found:'获取结果', retry:'重试中', fail:'处理异常', decide:'决策中', done:'确认', wait:'等待', info:'分析中', ref:'查阅资料', skip:'跳过', skill:'匹配skill' };
+      const labels = { think:'思考中', search:'搜索中', found:'获取结果', retry:'重试中', fail:'处理异常', decide:'决策中', done:'确认', wait:'等待', info:'分析中', ref:'查阅资料', skip:'跳过', skill:'匹配skill', write:'写入中' };
       showTyp(true, labels[ev.icon]||'处理中', (i+1)+'/'+events.length);
+
+      // Add think class for enhanced wave animation
+      if(ev.icon==='think') dom.typing.querySelector('.typing-a').classList.add('think');
+      else dom.typing.querySelector('.typing-a').classList.remove('think');
 
       // Fire tool-call notification
       try { notify(ev.icon, (ev.text||'').replace(/<[^>]*>/g,'').trim()); }catch(e){}
 
-      // Wait before showing the event
-      await sleep(delay);
+      // Wait before showing the event — cycle thinking stages during wait
+      const stages = THINK_STAGES[ev.icon];
+      if(stages && stages.length > 1) {
+        const stageDur = delay / stages.length;
+        for(let s=0; s<stages.length; s++) {
+          const lb=$('typingLabel'); if(lb) lb.textContent = labels[ev.icon]||'处理中';
+          const st=$('typingStep');
+          if(st) st.textContent = stages[s];
+          await sleep(stageDur);
+        }
+      } else {
+        await sleep(delay);
+      }
 
       showTyp(false);
 
@@ -1239,13 +1438,16 @@ async function execPhase(idx) {
         showTyp(false);
         const choice = await waitDecision(container, ev.question, ev.options);
         sb();
+      } else if(ev.type === 'mcp') {
+        showTyp(false);
+        await mcpCall(container, ev.tool, ev.args, ev.label);
       }
     }
 
     // Phase done
     if(stEl) { stEl.textContent='✓ 完成'; stEl.className='ps done'; }
 
-    // Show assets with file generation spinner
+    // Show assets with MCP write simulation per file
     const aEl=$('assets-'+idx);
     if(aEl) {
       aEl.classList.add('show');
@@ -1258,23 +1460,19 @@ async function execPhase(idx) {
           aEl.insertBefore(refDiv, list);
         }
 
-        // Show spinner
-        const spinner=document.createElement('div'); spinner.className='gen-spinner';
-        spinner.innerHTML=`<div class="gs-ring"></div><div class="gs-text">📄 文件生成中<span id="gsd-${idx}"></span></div>`;
-        list.appendChild(spinner);
+        // Track current phase for mcpWrite
+        S.currentPhaseIdx = idx;
 
-        // Animate dots via JS
-        let dotCount=0;
-        const dotEl=$('gsd-'+idx);
-        const dotTimer=setInterval(()=>{dotCount=(dotCount+1)%4;if(dotEl)dotEl.textContent='.'.repeat(dotCount)},400);
+        // Show agent "writing" via MCP for each asset
+        showTyp(true, '写入中', 'MCP.write');
+        dom.typing.querySelector('.typing-a').classList.remove('think');
 
-        // Wait ~5s then show real assets
-        const genTime=rand(4000,6000);
-        await sleep(genTime);
+        for(const a of (phase.assets||[])) {
+          await mcpWrite(a.icon, a.n, a.ext);
+        }
 
-        clearInterval(dotTimer);
-        spinner.classList.add('gs-done');
-        setTimeout(() => { if(spinner.parentNode) spinner.parentNode.removeChild(spinner); renderAssets(idx, phase.assets); }, 350);
+        showTyp(false);
+        renderAssets(idx, phase.assets);
       }
     }
   } catch(e) {
@@ -1497,7 +1695,7 @@ function toggleP(idx) {
 
 // Events
 dom.input.addEventListener('keydown', e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
-dom.input.addEventListener('input', function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
+dom.input.addEventListener('input', function(){this.style.height='auto';var m=130;var sh=this.scrollHeight;this.style.height=Math.min(sh,m)+'px';this.style.overflowY=sh>m?'auto':'hidden'});
 dom.input2.addEventListener('keydown', e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send2()}});
 dom.input2.addEventListener('input', function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'});
 
