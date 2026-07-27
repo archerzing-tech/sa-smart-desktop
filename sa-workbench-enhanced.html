@@ -465,6 +465,19 @@ function rand(min, max) { return Math.random() * (max - min) + min; }
 
 function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTop = dom.wsBody.scrollHeight; }catch(e){} }); }
 
+function sbToPhase(idx) {
+  requestAnimationFrame(() => {
+    try {
+      const el = $('pst-' + idx);
+      if (el) {
+        const parent = dom.wsBody;
+        const top = el.offsetTop - parent.offsetHeight * 0.15;
+        parent.scrollTo({ top, behavior: 'smooth' });
+      }
+    } catch(e) {}
+  });
+}
+
 function showTyp(on, label, step) {
   dom.typing.style.display = on ? 'block' : 'none';
   if(on && label) {
@@ -816,7 +829,7 @@ async function execPhase(idx) {
       const div = document.createElement('div'); div.className='ev';
       div.innerHTML = `<div class="ev-icon">${evIcon(ev.icon)}</div><div class="ev-body"><div class="ev-t">${ev.text||''}</div></div>`;
       container.appendChild(div);
-      sb();
+      sbToPhase(idx);
 
       // Show sub-text after a moment if present
       if(ev.sub) {
@@ -826,7 +839,7 @@ async function execPhase(idx) {
         subDiv.className = 'ev-sub'; subDiv.style.marginLeft = '28px';
         subDiv.innerHTML = ev.sub;
         container.appendChild(subDiv);
-        sb();
+        sbToPhase(idx);
       }
     }
 
