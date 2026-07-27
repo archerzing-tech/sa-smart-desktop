@@ -693,7 +693,7 @@ function evHTML(icon, text, sub) {
 
 function script_intent() {
   return [
-    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
+    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">jic-app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
     { icon:'think', text:'收到需求，先理解一下用户想要什么。', delay:600 },
     { icon:'think', text:'读了一遍，提到"电商订单管理"、"配置管理系统"… 核心诉求是构建一套新的业务系统。', delay:900 },
     { icon:'search', text:'在知识库中查找相关业务场景描述...', delay:800 },
@@ -836,7 +836,7 @@ const HVC_REFS = {
 function hvcScript_intent() {
   const hasDetail = S.conversation === 'has_detail';
   return hasDetail ? [
-    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 telecom 领域知识库...', delay:700 },
+    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 jic-telecom 领域知识库...', delay:700 },
     { icon:'think', text:'需求已明确：面向 HKT 的 VIP/VVIP 用户在特定场馆的体验保障。', delay:600 },
     { icon:'search', text:'分析 HKT 现网架构：接入层(OLT/DSLAM) → 汇聚层(SR/BNG) → 核心层(CR)...', delay:1000 },
     { icon:'found', text:'找到 HKT 网络拓扑文档，确认设备型号及组网结构。', sub:'Huawei MA5800 · Cisco ASR9000 · Juniper MX960', delay:700 },
@@ -957,7 +957,7 @@ function phaseCardHTML(phase, idx) {
       <div class="p-hd" onclick="toggleP(${idx})">
         <span class="pi">${phase.icon}</span>
         <span class="pt">${phase.title}</span>
-        <span class="skill-badge">${S.skill||'app-dev'}</span>
+        <span class="skill-badge">${S.skill||'jic-app-dev'}</span>
         <span class="ps" id="pst-${idx}">等待中</span>
         <span class="pe" id="pex-${idx}">▼</span>
       </div>
@@ -1173,7 +1173,7 @@ async function startProcess(text) {
     }
     // Has detail or was prompted — run HVC flow
     S.conversation = 'has_detail';
-    S.skill = 'telecom';
+    S.skill = 'jic-telecom';
     S.type = 'hvc';
 
     dom.welcome.classList.add('shrink');
@@ -1188,7 +1188,7 @@ async function startProcess(text) {
     addMsg('agent', `<div class="msg-meta"><span class="dot"></span> SA · ${ts()}</div>
       <div class="p-card" style="border-top:2px solid var(--accent);padding:12px 16px;font-size:14px;line-height:1.6">
 📥 收到 HKT 高价值客户保障需求，正在分析...<br>
-       Skill：<strong>telecom · HVC Agent</strong></div>`);
+       Skill：<strong>jic-telecom · HVC Agent</strong></div>`);
 
     dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">0</span>/<span id="phTot">${PHASES_HVC.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
     startTimer();
@@ -1245,8 +1245,8 @@ async function startProcess(text) {
   else if(text.includes('二次开发')||text.includes('现有')||text.includes('基础')) S.type='rework';
 
   // Detect skill
-  S.skill = 'app-dev';
-  if(text.includes('HTML')||text.includes('原型')||text.includes('设计')) S.skill='huashu-design';
+  S.skill = 'jic-app-dev';
+  if(text.includes('HTML')||text.includes('原型')||text.includes('设计')) S.skill='jic-huashu-design';
 
   // Transition view
   dom.welcome.classList.add('shrink');

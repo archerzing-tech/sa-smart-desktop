@@ -121,6 +121,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   background:var(--accent-bg);color:var(--accent);transition:all .3s
 }
 .p-hd .ps.done{background:var(--green-bg);color:var(--green)}
+.p-hd .ps.active{animation:ps-active 1.2s ease-in-out infinite}
+@keyframes ps-active{
+  0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.35)}
+  50%{box-shadow:0 0 0 6px rgba(79,70,229,0)}
+}
 @media(max-width:480px){.p-hd .skill-badge{display:none}}
 .p-hd .skill-badge{font-size:9px;padding:1px 8px;border-radius:100px;background:#f3e8ff;color:#7c3aed;font-family:var(--mono);font-weight:600;letter-spacing:.2px;margin-right:4px;white-space:nowrap}
 .p-hd .pe{font-size:9px;color:var(--text-muted);transition:transform .3s}
@@ -134,29 +139,47 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .ev{
   display:flex;gap:10px;padding:6px 10px 6px 12px;border-radius:var(--radius-sm);
   position:relative;overflow:hidden;
-  animation:ev-in .5s cubic-bezier(.22,1,.36,1)
+  animation:ev-in .5s cubic-bezier(.22,1,.36,1), ev-glow 1.2s ease-out .25s
 }
 .ev::before{
   content:'';position:absolute;left:0;top:6px;bottom:6px;width:2.5px;
   background:var(--accent);border-radius:2px;
-  animation:ev-line .45s cubic-bezier(.22,1,.36,1)
+  animation:ev-line .45s cubic-bezier(.22,1,.36,1), ev-line-pulse .7s ease-in-out .35s 3
+}
+.ev::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(79,70,229,.06) 50%,transparent 100%);
+  background-size:200% 100%;pointer-events:none;border-radius:var(--radius-sm);
+  animation:ev-shimmer .6s ease-out .1s
 }
 @keyframes ev-in{
   0%{opacity:0;transform:translateY(14px);background:var(--accent-bg)}
   45%{background:var(--accent-bg)}
   100%{opacity:1;transform:translateY(0);background:transparent}
 }
+@keyframes ev-glow{
+  0%{box-shadow:0 0 10px rgba(79,70,229,.2)}
+  100%{box-shadow:none}
+}
 @keyframes ev-line{
   from{height:0;opacity:0} to{height:calc(100% - 12px);opacity:1}
 }
+@keyframes ev-line-pulse{
+  0%,100%{opacity:.5;width:2.5px}
+  50%{opacity:1;width:3.5px;box-shadow:0 0 8px var(--accent)}
+}
+@keyframes ev-shimmer{
+  0%{background-position:200% 0;opacity:1}
+  100%{background-position:-200% 0;opacity:0}
+}
 .ev-icon{
   flex-shrink:0;width:20px;text-align:center;font-size:14px;margin-top:1px;
-  animation:ev-icon .45s cubic-bezier(.34,1.56,.64,1)
+  animation:ev-icon .5s cubic-bezier(.34,1.56,.64,1)
 }
 @keyframes ev-icon{
-  0%{transform:scale(0);opacity:0}
-  60%{transform:scale(1.3);opacity:1}
-  100%{transform:scale(1);opacity:1}
+  0%{transform:scale(0) rotate(-15deg);opacity:0}
+  55%{transform:scale(1.35) rotate(5deg);opacity:1}
+  100%{transform:scale(1) rotate(0);opacity:1}
 }
 .ev-body{flex:1;min-width:0}
 .ev-t{font-size:13px;line-height:1.55}
@@ -716,7 +739,7 @@ function renderContent(type, data, title) {
 
 function script_intent() {
   return [
-    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
+    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">jic-app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
     { icon:'think', text:'收到需求，先理解一下用户想要什么。', delay:600 },
     { icon:'think', text:'读了一遍，提到"电商订单管理"、"配置管理系统"… 核心诉求是构建一套新的业务系统。', delay:900 },
     { icon:'search', text:'在知识库中查找相关业务场景描述...', delay:800 },
@@ -918,7 +941,7 @@ const HVC_REFS = {
 function hvcScript_intent() {
   const hasDetail = S.conversation === 'has_detail';
   return hasDetail ? [
-    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 telecom 领域知识库...', delay:700 },
+    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 jic-telecom 领域知识库...', delay:700 },
     { icon:'think', text:'需求已明确：面向 HKT 的 VIP/VVIP 用户在特定场馆的体验保障。', delay:600 },
     { icon:'search', text:'分析 HKT 现网架构：接入层(OLT/DSLAM) → 汇聚层(SR/BNG) → 核心层(CR)...', delay:1000 },
     { icon:'found', text:'找到 HKT 网络拓扑文档，确认设备型号及组网结构。', sub:'Huawei MA5800 · Cisco ASR9000 · Juniper MX960', delay:700 },
@@ -1074,7 +1097,7 @@ function phaseCardHTML(phase, idx) {
       <div class="p-hd" onclick="toggleP(${idx})">
         <span class="pi">${phase.icon}</span>
         <span class="pt">${phase.title}</span>
-        <span class="skill-badge">${S.skill||'app-dev'}</span>
+        <span class="skill-badge">${S.skill||'jic-app-dev'}</span>
         <span class="ps" id="pst-${idx}">等待中</span>
         <span class="pe" id="pex-${idx}">▼</span>
       </div>
@@ -1299,7 +1322,7 @@ async function startProcess(text) {
     }
     // Has detail or was prompted — run HVC flow
     S.conversation = 'has_detail';
-    S.skill = 'telecom';
+    S.skill = 'jic-telecom';
     S.type = 'hvc';
 
     dom.welcome.classList.add('shrink');
@@ -1314,7 +1337,7 @@ async function startProcess(text) {
     addMsg('agent', `<div class="msg-meta"><span class="dot"></span> SA · ${ts()}</div>
       <div class="p-card" style="border-top:2px solid var(--accent);padding:12px 16px;font-size:14px;line-height:1.6">
 📥 收到 HKT 高价值客户保障需求，正在分析...<br>
-       Skill：<strong>telecom · HVC Agent</strong></div>`);
+       Skill：<strong>jic-telecom · HVC Agent</strong></div>`);
 
     dom.wsStatus.innerHTML=`<span class="d"></span> PROCESSING · <span class="v" id="phIdx">0</span>/<span id="phTot">${PHASES_HVC.length}</span> · ⏱ <span class="v" id="timer">00:00</span>`;
     startTimer();
@@ -1371,8 +1394,8 @@ async function startProcess(text) {
   else if(text.includes('二次开发')||text.includes('现有')||text.includes('基础')) S.type='rework';
 
   // Detect skill
-  S.skill = 'app-dev';
-  if(text.includes('HTML')||text.includes('原型')||text.includes('设计')) S.skill='huashu-design';
+  S.skill = 'jic-app-dev';
+  if(text.includes('HTML')||text.includes('原型')||text.includes('设计')) S.skill='jic-huashu-design';
 
   // Transition view
   dom.welcome.classList.add('shrink');
