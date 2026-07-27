@@ -179,21 +179,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .ev-body{min-height:1.5em}
 
 /* Thinking bubble — shown inside conversation while AI processes */
-.thinking-bubble{clear:both;margin-bottom:10px;animation:tb-in .35s cubic-bezier(.22,1,.36,1)}
-@keyframes tb-in{from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)}}
-.thinking-bubble .tb-inner{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 18px 4px;box-shadow:var(--shadow);max-width:75%;float:left}
-.thinking-bubble .tb-avatar{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;animation:tb-pulse 2s ease-in-out infinite}
-@keyframes tb-pulse{0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.35)} 50%{box-shadow:0 0 0 8px rgba(79,70,229,0)}}
-.thinking-bubble .tb-body{display:flex;flex-direction:column;gap:3px}
+.thinking-bubble{clear:both;margin-bottom:10px;animation:tb-in .4s cubic-bezier(.22,1,.36,1)}
+.thinking-bubble.tb-out{animation:tb-out .3s ease-in forwards}
+@keyframes tb-out{0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-8px) scale(.95)}}
+@keyframes tb-in{0%{opacity:0;transform:translateY(12px) scale(.97)} 100%{opacity:1;transform:translateY(0) scale(1)}}
+.thinking-bubble .tb-inner{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 18px 4px;box-shadow:var(--shadow);max-width:75%;float:left;position:relative;overflow:hidden}
+/* Shimmer sweep across the bubble */
+.thinking-bubble .tb-inner::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent 0%,rgba(79,70,229,.04) 50%,transparent 100%);animation:tb-shimmer 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes tb-shimmer{0%{left:-60%} 100%{left:120%}}
+.thinking-bubble .tb-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;animation:tb-pulse 1.8s ease-in-out infinite;position:relative}
+.thinking-bubble .tb-avatar::after{content:'';position:absolute;width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:tb-wave 2.2s ease-out infinite}
+@keyframes tb-pulse{0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.3)} 50%{box-shadow:0 0 0 6px rgba(79,70,229,.12)}}
+@keyframes tb-wave{0%{transform:scale(.7);opacity:.5} 100%{transform:scale(1.5);opacity:0}}
+.thinking-bubble .tb-body{display:flex;flex-direction:column;gap:4px}
 .thinking-bubble .tb-label{font-size:12px;color:var(--text-secondary);font-weight:500;display:flex;align-items:center;gap:8px}
-.thinking-bubble .tb-dots{display:inline-flex;gap:3px}
-.thinking-bubble .tb-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:tb-dot 1.4s infinite both}
+.thinking-bubble .tb-dots{display:inline-flex;gap:4px}
+.thinking-bubble .tb-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:tb-dot 1.6s ease-in-out infinite both}
 .thinking-bubble .tb-dots span:nth-child(1){animation-delay:0s}
-.thinking-bubble .tb-dots span:nth-child(2){animation-delay:.2s}
-.thinking-bubble .tb-dots span:nth-child(3){animation-delay:.4s}
-.thinking-bubble .tb-dots span:nth-child(4){animation-delay:.6s}
-@keyframes tb-dot{0%,80%,100%{transform:scale(.6);opacity:.3} 40%{transform:scale(1);opacity:1}}
-.thinking-bubble .tb-step{font-size:10px;color:var(--text-muted);font-family:var(--mono);display:inline-block}
+.thinking-bubble .tb-dots span:nth-child(2){animation-delay:.25s}
+.thinking-bubble .tb-dots span:nth-child(3){animation-delay:.5s}
+.thinking-bubble .tb-dots span:nth-child(4){animation-delay:.75s}
+@keyframes tb-dot{0%,100%{opacity:.25} 50%{opacity:1}}
+.thinking-bubble .tb-step{font-size:10px;color:var(--text-muted);font-family:var(--mono);display:inline-block;background:var(--surface-alt);padding:1px 7px;border-radius:4px;letter-spacing:.2px}
+
+/* Particle burst on exit */
+.tb-particle{position:absolute;border-radius:50%;pointer-events:none;z-index:3;animation:tb-particle-burst .6s ease-out forwards}
+@keyframes tb-particle-burst{0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
 
 .ia-box{margin:10px 0 4px 28px;animation:ia-in .35s cubic-bezier(.22,1,.36,1)}
 @keyframes ia-in{from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)}}
@@ -585,16 +596,51 @@ function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTop = dom.w
 let _tbEl = null;
 function showTyp(on, label, step) {
   if(on) {
+    // If old bubble still fading out, kill it immediately
+    if(_tbEl && _tbEl.parentNode) {
+      if(_tbEl._to) clearTimeout(_tbEl._to);
+      _tbEl.parentNode.removeChild(_tbEl); _tbEl = null;
+    }
     if(!_tbEl) {
       _tbEl = document.createElement('div'); _tbEl.className = 'thinking-bubble';
-      _tbEl.innerHTML = `<div class="tb-inner"><div class="tb-avatar">⚡</div><div class="tb-body"><div class="tb-label"><span class="tb-text">${label||'思考中'}</span><span class="tb-dots"><span></span><span></span><span></span><span></span></span></div></div></div>`;
+      _tbEl.innerHTML = `<div class="tb-inner"><div class="tb-avatar">⚡</div><div class="tb-body"><div class="tb-label"><span class="tb-text">${label||'思考中'}</span><span class="tb-dots"><span></span><span></span><span></span><span></span></span></div><div class="tb-step"></div></div></div>`;
       dom.wsBody.appendChild(_tbEl); sb();
     }
     const txt = _tbEl.querySelector('.tb-text');
     if(txt && label) txt.textContent = label;
+    if(step) {
+      const st = _tbEl.querySelector('.tb-step');
+      if(st) st.textContent = step;
+    }
   } else {
     if(_tbEl && _tbEl.parentNode) {
-      _tbEl.parentNode.removeChild(_tbEl); _tbEl = null;
+      // Burst particles
+      const inner = _tbEl.querySelector('.tb-inner');
+      if(inner) {
+        inner.style.overflow = 'visible'; // let particles escape bounds
+        const colors = ['#4f46e5','#818cf8','#7c3aed','#6366f1','#a78bfa','#c4b5fd'];
+        const n = 16;
+        for(let i = 0; i < n; i++) {
+          const p = document.createElement('span');
+          p.className = 'tb-particle';
+          const angle = (Math.PI * 2 / n) * i + (Math.random() - 0.5) * 0.5;
+          const dist = 20 + Math.random() * 45;
+          p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+          p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+          p.style.background = colors[Math.floor(Math.random() * colors.length)];
+          const sz = 3 + Math.random() * 4;
+          p.style.width = sz + 'px';
+          p.style.height = sz + 'px';
+          p.style.left = '50%';
+          p.style.top = '50%';
+          p.style.animationDelay = (Math.random() * 0.1) + 's';
+          inner.appendChild(p);
+        }
+      }
+      _tbEl.classList.add('tb-out');
+      _tbEl._to = setTimeout(() => {
+        if(_tbEl && _tbEl.parentNode) { _tbEl.parentNode.removeChild(_tbEl); _tbEl = null; }
+      }, 600);
     }
   }
 }
@@ -756,30 +802,30 @@ async function mcpCall(container, tool, args, label) {
 // ===== Deploy script =====
 function script_deploy() {
   return [
-    { icon:'skill', text:'进入<span class="hl">部署上线</span>阶段。先扫描目标环境状态...', delay:700 },
-    { icon:'search', text:'Env.scan — 连接目标服务器，检测运行环境...', delay:600 },
-    { icon:'found', text:'环境检测完成：<span class="ok">Ubuntu 22.04 · Node 20 · Nginx 1.24 · Redis 7 · PG 16</span>', sub:'磁盘剩余 42% · 内存 8G/16G · CPU 4核', delay:500 },
-    { icon:'think', text:'环境就绪，开始打包部署。', delay:400 },
+    { icon:'skill', text:'好，所有开发工作都完成了，现在进入<span class="hl">部署上线</span>阶段。先让扫描程序去看看目标服务器的环境是什么样的，别上来就部署结果发现环境不匹配。', delay:700 },
+    { icon:'search', text:'Env.scan 启动——远程连接目标服务器，开始检测操作系统版本、运行时环境、中间件状态、数据库连接... 这些都得确认一遍才放心。', delay:600 },
+    { icon:'found', text:'环境检测完毕，结果不错：<span class="ok">Ubuntu 22.04 · Node 20 · Nginx 1.24 · Redis 7 · PG 16</span>，全部跟开发环境一致，没发现版本冲突的问题。', sub:'磁盘剩余 42% · 内存 8G/16G · CPU 4核', delay:500 },
+    { icon:'think', text:'环境完全OK，可以开始打包部署了。按照标准流程来：先打包、再推送、解压、启动、最后做个健康检查确认一切正常。', delay:400 },
     { type:'mcp', icon:'write', tool:'Build.package', label:'打包工程代码', args:'--mode production --zip' },
     { type:'mcp', icon:'write', tool:'Deploy.push', label:'推送至目标服务器', args:'scp → 192.168.1.100:/opt/app' },
     { type:'mcp', icon:'write', tool:'Deploy.extract', label:'解压部署包', args:'/opt/app/release-v2.1.0' },
     { type:'mcp', icon:'write', tool:'Service.start', label:'启动服务', args:'pm2 start ecosystem.config.js' },
     { type:'mcp', icon:'write', tool:'Health.check', label:'健康检查', args:'GET /api/health → 200 OK' },
-    { icon:'done', text:'✅ 部署完成，系统已上线运行。', delay:400 },
+    { icon:'done', text:'✅ 部署全部完成，系统已成功上线运行。访问地址和初始配置已经记录到部署文档里了。', delay:400 },
   ];
 }
 function hvcScript_deploy() {
   return [
-    { icon:'skill', text:'进入<span class="hl">灰度上线</span>阶段。先检测现网设备状态...', delay:700 },
-    { icon:'search', text:'Config.pull — 拉取现网设备当前配置快照...', delay:800 },
-    { icon:'found', text:'快照完成：Huawei MA5800 · Cisco ASR9000 · Juniper MX960 配置已备份。', delay:500 },
+    { icon:'skill', text:'设计验证都通过了，进入<span class="hl">灰度上线</span>阶段。现网环境不比实验室，稳妥起见先用少量设备做灰度验证，确认没问题再全量铺开。', delay:700 },
+    { icon:'search', text:'Config.pull —— 先拉取现网设备当前的配置快照，做个完整的备份。万一灰度过程中出问题，随时可以回滚到上一个稳定版本。', delay:800 },
+    { icon:'found', text:'配置快照已完成备份：Huawei MA5800（接入层）· Cisco ASR9000（汇聚层）· Juniper MX960（核心层）全部配置已保存到版本管理库。', delay:500 },
     { type:'mcp', icon:'write', tool:'Config.generate', label:'生成灰度策略配置', args:'场馆: HK-Coliseum · 比例: 30%' },
     { type:'mcp', icon:'write', tool:'Deploy.push', label:'推送至网管设备', args:'NMS → MA5800/ASR9000' },
     { type:'mcp', icon:'write', tool:'Config.apply', label:'应用配置（原子化）', args:'commit confirm 300s' },
     { type:'mcp', icon:'write', tool:'Monitor.watch', label:'观察业务指标', args:'MOS/时延/丢包率 · 5min窗口' },
-    { icon:'found', text:'灰度观察完成：VIP 用户 MOS 4.3，丢包率 0.008%，指标正常。', delay:500 },
+    { icon:'found', text:'灰度观察窗口结束，各项指标一切正常：VIP 用户 MOS 均值 4.3（目标4.0以上），丢包率 0.008%（远低于1%阈值），平均时延 12ms。灰度设备运行稳定，没有产生任何告警。', delay:500 },
     { type:'mcp', icon:'write', tool:'Config.full', label:'全量下发配置', args:'剩余 70% 设备' },
-    { icon:'done', text:'✅ 灰度上线完成，所有场馆已全量部署。', delay:400 },
+    { icon:'done', text:'✅ 灰度上线全部完成，所有场馆设备已全量部署新策略。保障服务正式生效。', delay:400 },
   ];
 }
 
@@ -815,30 +861,30 @@ function evHTML(icon, text, sub) {
 
 function script_intent() {
   return [
-    { icon:'skill', text:'分析发现您的需求适合 <span class="hl">jic-app-dev</span> skill（全栈应用开发），正在按 skill 流程执行...', delay:800 },
-    { icon:'think', text:'收到需求，先理解一下用户想要什么。', delay:600 },
-    { icon:'think', text:'读了一遍，提到"电商订单管理"、"配置管理系统"… 核心诉求是构建一套新的业务系统。', delay:900 },
-    { icon:'search', text:'在知识库中查找相关业务场景描述...', delay:800 },
-    { icon:'found', text:'找到一篇电商订单管理系统的业务说明，但内容偏通用，针对性不够。', sub:'来源: 行业知识库 · 匹配度 60%', delay:700 },
-    { icon:'retry', text:'换个角度，搜索"配置管理系统 最佳实践"...', delay:1000 },
-    { icon:'found', text:'这次找到一份配置管理系统的设计指南，内容更贴合。', sub:'来源: 技术社区 · 发布于2025年', delay:500 },
-    { icon:'decide', text:'综合来看，这是一个 <span class="hl">新业务构建</span> 类型的需求，领域是电商订单管理。', delay:800 },
-    { icon:'info', text:'新业务构建需要完整走一遍调研→设计→实现→测试→部署的流程。', delay:400 },
-    { type:'confirm', icon:'done', text:'方向分析完成，确认后进入规划阶段。', btnText:'确认方向，继续 →', delay:300 },
+    { icon:'skill', text:'嗯，让我先看看这个需求... 检测到这是一次 <span class="hl">全新应用开发</span> 类型的任务，我调用了 jic-app-dev skill 来接手。这个 skill 我比较熟悉，之前做过不少类似的。', delay:800 },
+    { icon:'think', text:'让我把需求仔细读一遍。用户在说"电商订单管理"和"配置管理系统"... 嗯，听起来是想从零开始构建一套完整的业务系统，而不是在现有系统上改改。', delay:600 },
+    { icon:'think', text:'我再想想... "订单管理"这部分涉及销售流程、库存、支付、物流这些环节，而"配置管理"则跟商品属性、定价策略、促销规则有关。两个放在一起的话，核心是要做一个既能管订单流转、又能灵活配置业务规则的平台。', delay:900 },
+    { icon:'search', text:'好的，现在我去知识库翻一翻，看看有没有类似的电商订单管理系统的场景描述可以参考。知识库里应该有不少行业资料...', delay:800 },
+    { icon:'found', text:'找到了几篇相关的资料，有一篇电商订单管理系统的业务说明描述得还算全面，不过感觉内容比较通用，没有针对配置管理这个维度做深入。匹配度大概60%吧，只能作为背景参考。', sub:'来源: 行业知识库 · 匹配度 60%', delay:700 },
+    { icon:'retry', text:'刚才那篇不太够用，我换个关键词试试——搜一下"配置管理系统"加上"最佳实践"，看看技术社区有没有更接地气的方案。', delay:1000 },
+    { icon:'found', text:'这次好多了！找到一份配置管理系统的设计指南，讲的是如何在订单系统中嵌入可配置的业务规则引擎，还有详细的架构建议。这篇内容跟用户需求的贴合度很高。', sub:'来源: 技术社区 · 发布于2025年', delay:500 },
+    { icon:'decide', text:'综合两边的信息来看，用户真正要的是一个 <span class="hl">新业务构建</span> 类型的项目，所属领域是电商订单管理，但重点在于"配置化"——也就是要让业务人员能自己调整规则，不用每次都改代码。这个定位很清晰了。', delay:800 },
+    { icon:'info', text:'对于这种从零开始的新业务系统，标准的做法是完整走一遍调研→设计→实现→测试→部署的流程，每个阶段都不能跳过，这样才能保证质量。回头执行的时候我再根据情况动态调整节奏。', delay:400 },
+    { type:'confirm', icon:'done', text:'方向分析这块我心里有数了，整体思路和关键判断都整理好了。您看看方向对不对，没问题的话咱们就进入规划阶段开始拆细节了。', btnText:'确认方向，继续 →', delay:300 },
   ];
 }
 
 function script_planning() {
   return [
-    { icon:'think', text:'需求理解清楚了，现在需要拆解成可执行的步骤。', delay:600 },
-    { icon:'search', text:'查阅项目拆解相关的参考框架...', delay:700 },
-    { icon:'found', text:'找到一个标准的分阶段方法：领域调研 → 架构设计 → 编码实现 → 测试验证 → 部署上线。', sub:'来源: 项目管理实践指南', delay:800 },
-    { icon:'think', text:'这套框架结构清晰，覆盖了从0到1的完整链路。', delay:500 },
-    { icon:'decide', text:'决定采用5阶段方案：<span class="hl">调研 → 设计 → 实现 → 测试 → 部署</span>', delay:700 },
-    { icon:'search', text:'评估一下各阶段的工作量...', delay:700 },
-    { icon:'found', text:'找到一份相似项目的执行数据作为参考，做了适当调整。', delay:500 },
-    { icon:'done', text:'规划完成：确定5阶段执行方案，按 skill 流程推进。', delay:500 },
-    { type:'decision', icon:'decide', text:'规划方案完成，确认后进入执行阶段。', delay:300,
+    { icon:'think', text:'好，需求理解清楚了，现在要想办法把这么大一个系统拆成可执行的步骤。不能一口吃成胖子，得有一个清晰的路线图。', delay:600 },
+    { icon:'search', text:'我先去翻翻项目管理的标准框架，看看业界对这类全栈应用是怎么拆解的。之前做过的项目经验也可以拿来参考。', delay:700 },
+    { icon:'found', text:'找到了！标准的分阶段方法论：领域调研 → 架构设计 → 编码实现 → 测试验证 → 部署上线。这个框架挺完整的，从0到1的每个环节都覆盖了，而且跟我之前做电商系统的经验吻合。', sub:'来源: 项目管理实践指南', delay:800 },
+    { icon:'think', text:'五个阶段，听起来挺靠谱。调研阶段搞清楚业务到底要什么，设计阶段把架子搭好，实现阶段写代码，验证阶段确保没问题，最后上线交付。每阶段之间有明确的交付物和评审点。', delay:500 },
+    { icon:'decide', text:'就按这个来了，决定采用5阶段方案：<span class="hl">调研 → 设计 → 实现 → 测试 → 部署</span>。每个阶段我预估一下工作量，回头执行的时候好把控节奏。', delay:700 },
+    { icon:'search', text:'让我翻一翻之前的项目数据，看看类似规模的项目每个阶段大概花了多少时间。有个电商后台项目跟这个需求规模差不多，可以作为参考基准。', delay:700 },
+    { icon:'found', text:'参考数据拿到了。之前那个项目总共用了大概4周，一轮迭代下来，其中实现阶段占了将近一半的时间。考虑到这次需求有配置管理的复杂度，我给每个阶段适当留了点余量。', delay:500 },
+    { icon:'done', text:'规划完成：确定5阶段执行方案，各阶段任务边界清晰，按 skill 流程推进。随时可以根据实际情况调整步调。', delay:500 },
+    { type:'decision', icon:'decide', text:'方案已经摆出来了，接下来就是进入执行阶段。不过在开始之前，想问问您倾向哪种推进方式？这会影响我后面排任务的优先级和节奏。', delay:300,
       question:'选择执行策略？',
       options:[
         { label:'标准推进', desc:'按5阶段方案顺序执行', value:'standard' },
@@ -853,66 +899,66 @@ function script_execution(isAppend, isRework) {
   // Execution differs based on request type
   if (isAppend) {
     return [
-      { icon:'think', text:'需要在现有SaaS项目基础上新增功能，先了解现有系统的架构。', delay:600 },
-      { icon:'search', text:'查找现有项目的技术文档和模块说明...', delay:800 },
-      { icon:'found', text:'找到项目结构说明，定位到需要修改的模块位置。', sub:'涉及模块: 用户管理 · 数据看板 · 报表服务', delay:600 },
-      { icon:'think', text:'分析一下新增功能涉及哪些影响点...', delay:700 },
-      { icon:'found', text:'影响分析完成：涉及3个模块、27个接口，都是向后兼容的。', delay:600 },
-      { icon:'decide', text:'确定采用<span class="hl">策略模式</span>注入新功能，不破坏现有代码结构。', delay:800 },
-      { icon:'search', text:'查阅这个场景下的集成方案最佳实践...', sub:'来源: 技术社区案例', delay:700 },
-      { icon:'found', text:'找到一个相似的案例，可以作为参考。', delay:500 },
-      { icon:'done', text:'方案已确定，新增5个模块、27个类，预估代码覆盖率达到96%。', delay:600 },
+      { icon:'think', text:'要在现有SaaS系统上做功能追加，第一个想的问题是——不能把原有的东西搞坏了。得先摸清楚现有系统的架构长什么样，新增功能该往哪里插。', delay:600 },
+      { icon:'search', text:'翻项目文档，看看技术栈、模块划分、核心业务逻辑都分布在哪些地方。特别关注那些跟新功能可能有交集的模块。', delay:800 },
+      { icon:'found', text:'摸清楚了！项目采用微服务架构，跟新功能相关的模块主要是用户管理、数据看板和报表服务这三个。文档写得还挺清楚，定位到具体的代码位置了。', sub:'涉及模块: 用户管理 · 数据看板 · 报表服务', delay:600 },
+      { icon:'think', text:'现在来分析一下影响范围——新增功能需要改哪些接口、新增哪些表、会不会影响现有的业务逻辑。最好是能做到完全向后兼容，老的调用方不用改任何代码。', delay:700 },
+      { icon:'found', text:'影响分析完成：涉及3个模块，共27个接口需要扩展，但都是新增参数和可选字段，完全向后兼容。现有API和数据结构都不需要动。', delay:600 },
+      { icon:'decide', text:'决定采用<span class="hl">策略模式</span>来注入新功能——把新增的逻辑封装成独立的策略实现，通过配置开关控制启用。这样既不影响现有代码，以后切换或扩展也方便。', delay:800 },
+      { icon:'search', text:'去查一下业界在这个场景下有没有成熟的集成方案最佳实践，看看别人是怎么做的，有没有什么坑可以提前避开。', sub:'来源: 技术社区案例', delay:700 },
+      { icon:'found', text:'找到一个非常相似的案例，也是给SaaS系统做功能追加，连模块规模都差不多。重点看了他们的接口设计和数据迁移方案，有不少可以借鉴的地方。', delay:500 },
+      { icon:'done', text:'方案全部确定下来了：新增5个模块、27个核心类，使用策略模式注入，不走回头路。代码覆盖率目标96%，剩下的4%是一些边界情况，手动验证就好。', delay:600 },
     ];
   }
   if (isRework) {
     return [
-      { icon:'think', text:'二次开发需要对现有系统做充分摸底，先看看当前的代码状态。', delay:700 },
-      { icon:'search', text:'运行静态分析工具扫描现有代码库...', delay:1000 },
-      { icon:'found', text:'扫描完成，整体代码质量尚可，有一些可以优化的地方。', sub:'技术债务估算: 约2.3天可清理', delay:600 },
-      { icon:'info', text:'技术债务主要集中在中端模块，不影响本次改造。', delay:500 },
-      { icon:'search', text:'分析现有架构和模块依赖关系...', delay:800 },
-      { icon:'found', text:'架构分析完成，生成了模块依赖图，标注了改造影响范围。', delay:600 },
-      { icon:'decide', text:'确定采用<span class="hl">渐进式改造策略</span>，分3个改造点推进。', delay:800 },
-      { icon:'done', text:'改造方案确定：改造8个现有类，新增15个类，覆盖全部需求。', delay:600 },
+      { icon:'think', text:'二次开发跟新项目不一样，得先给现有系统做个全面体检——代码质量怎么样、有没有历史遗留问题、哪些地方容易出幺蛾子。先把底摸清楚再动手。', delay:700 },
+      { icon:'search', text:'启动静态分析工具，扫描全量代码库... 包括代码规范检查、潜在的bug检测、安全漏洞扫描，还有依赖库版本检查。一套组合拳下来该有的都有了。', delay:1000 },
+      { icon:'found', text:'扫描跑完了，结果还不错！整体代码质量在及格线以上，没有严重的安全漏洞。不过发现了一些可以优化的地方，主要集中在代码规范和老旧的API调用上。', sub:'技术债务估算: 约2.3天可清理', delay:600 },
+      { icon:'info', text:'详细看了下技术债务的分布，大部分集中在中端模块——那些业务逻辑层的老代码，确实有些历史包袱。不过好消息是这些不影响本次改造，可以后面专门安排一轮重构。', delay:500 },
+      { icon:'search', text:'接下来分析现有架构和模块之间的依赖关系，搞清楚每个模块的职责边界，以及它们之间是怎么通信的。画个依赖图出来，改造范围就一目了然了。', delay:800 },
+      { icon:'found', text:'架构分析完成！生成了模块依赖图，标注了本次改造涉及的范围——主要是用户管理域和订单域的交集部分，以及相关的数据流转路径。影响范围比预想的要集中。', delay:600 },
+      { icon:'decide', text:'改造策略确定了——采用<span class="hl">渐进式改造</span>，分3个改造点依次推进。每个改造点完成后都做验证，确保不会出现改一处坏一片的情况。', delay:800 },
+      { icon:'done', text:'改造方案落实：改造8个现有类（接口扩展+内部重构），新增15个类（新功能模块）。所有需求点都有对应的代码变更覆盖到了。', delay:600 },
     ];
   }
   // Default: new business
   return [
-    { icon:'think', text:'开始执行实施阶段，先做领域调研。', delay:500 },
-    { icon:'search', text:'搜索电商订单管理相关行业资料...', delay:1000 },
-    { icon:'found', text:'找到几份行业报告和竞品分析，内容比较全面。', sub:'来源: 公开行业报告 · 技术社区', delay:700 },
-    { icon:'retry', text:'有一份报告的完整版链接失效了，换一个来源重新查找。', delay:900 },
-    { icon:'found', text:'找到替代资料，虽然不是同一份，但覆盖的内容更全面。', delay:500 },
-    { icon:'think', text:'调研完成，进入架构设计。', delay:400 },
-    { icon:'search', text:'参考订单管理系统的常见架构模式...', delay:800 },
-    { icon:'found', text:'找到一个开源订单系统的架构说明，虽然版本较旧但核心思路可以借鉴。', sub:'参考项目版本: 2.3 · 发布于2023年', delay:700 },
-    { icon:'decide', text:'决定采用分层架构：<span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>', delay:800 },
-    { type:'confirm', icon:'done', text:'架构方案确认完成，可以进入编码阶段。', btnText:'开始编码 →', delay:300 },
-    { icon:'done', text:'架构设计完成，开始编码实现、测试验证的自动化流程。', delay:600 },
+    { icon:'think', text:'好，正式进入实施阶段了。第一步先做领域调研——把用户业务吃透，搞清楚行业里这套系统通常是怎么做的，有什么标准和最佳实践。', delay:500 },
+    { icon:'search', text:'开始搜索电商订单管理相关的行业资料... 先看看主流的订单管理流程是什么样的，业内常用的架构模式有哪些，还有没有一些开源的参考实现。', delay:1000 },
+    { icon:'found', text:'找到了几份很有价值的行业报告和竞品分析报告，内容覆盖了订单生命周期管理、库存同步策略、支付对账流程等核心领域。还有一个开源项目的架构解析写得特别透彻。', sub:'来源: 公开行业报告 · 技术社区', delay:700 },
+    { icon:'retry', text:'咦，有一份报告的完整版下载链接失效了，打不开。换个来源重新找一下——我记得这份报告在其他平台也有转载。', delay:900 },
+    { icon:'found', text:'找到了替代版本，虽然不是同一份，但内容更全面——包含了最新的行业趋势分析和几个头部企业的案例对比。因祸得福了属于是。', delay:500 },
+    { icon:'think', text:'调研差不多了，脑子里对电商订单管理系统的整体轮廓有了清晰的认识。接下来进入架构设计——把业务需求转化为技术方案。', delay:400 },
+    { icon:'search', text:'参考一下常见的订单管理系统架构模式... 单体、SOA、微服务、事件驱动... 各有利弊。还要考虑到配置管理这个特殊需求——业务规则引擎怎么嵌入。', delay:800 },
+    { icon:'found', text:'找到一个不错的参考——一个开源订单系统的架构说明文档，虽然是2023年的版本了，但核心的分层思想、事件驱动模式、以及规则引擎的集成方式都非常有参考价值。', sub:'参考项目版本: 2.3 · 发布于2023年', delay:700 },
+    { icon:'decide', text:'架构方案敲定了：采用经典的分层架构 <span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>，再加上一个独立的规则引擎层来处理配置管理的需求。层与层之间通过接口隔离，灵活度高。', delay:800 },
+    { type:'confirm', icon:'done', text:'架构方案已经确认完毕，各个模块的职责和接口定义都清晰了。接下来就可以进入编码阶段了，您这边确认一下，我就往下推进了。', btnText:'开始编码 →', delay:300 },
+    { icon:'done', text:'架构设计全部完成，模块划分、接口定义、数据流向都确定好了。进入编码实现阶段，同时测试验证也会跟上来，保证质量。', delay:600 },
   ];
 }
 
 function script_verify(isRework) {
   let steps = [
-    { icon:'think', text:'实施完成，现在进行全面验证。', delay:500 },
-    { icon:'search', text:'逐项核对需求清单，确保所有功能都已实现...', delay:800 },
-    { icon:'found', text:'核对完成，全部需求均已覆盖，没有遗漏。', delay:600 },
+    { icon:'think', text:'实施阶段搞定了，现在进入验证环节。这个环节很重要——不能光顾着写代码，得确保每一块功能都是好使的，性能也得过关才行。', delay:500 },
+    { icon:'search', text:'先把当初的需求清单翻出来，一条一条对照着检查。用户提到的每个功能点、每个业务场景，我都要确认是不是真的实现了，有没有遗漏。', delay:800 },
+    { icon:'found', text:'核对完毕，所有功能点全部覆盖到了，没有遗漏。从订单创建、编辑、取消到退款流程，再到配置管理那一整套规则引擎，都走通了。', delay:600 },
   ];
   if (isRework) {
     steps.push(
-      { icon:'info', text:'因为是二次开发，需要额外做兼容性验证和回归测试。', delay:500 },
-      { icon:'search', text:'运行回归测试套件...', delay:1000 },
-      { icon:'found', text:'回归测试342个用例全部通过，无回归缺陷。', delay:500 },
-      { icon:'done', text:'改造前后性能对比：基本持平，变化在可接受范围内。', delay:600 },
+      { icon:'info', text:'这次是二次开发，光测新功能还不够，还得确保没把原来的东西搞坏。兼容性验证和回归测试是必须的，特别是原来那些核心流程不能受影响。', delay:500 },
+      { icon:'search', text:'好，开始跑回归测试套件。测试用例还挺多的，涵盖所有核心业务路径和边界情况，预计需要跑一会儿。', delay:1000 },
+      { icon:'found', text:'回归测试结果出来了——342个用例全部通过，一个失败的都没有！这说明新增的改动跟现有系统兼容得很好，没有引入任何回归缺陷。', delay:500 },
+      { icon:'done', text:'改造前后的性能数据也对比了一下，响应时间和吞吐量基本持平，有少量指标甚至略有提升。变化在可接受范围内，没有性能退化的问题。', delay:600 },
     );
   } else {
     steps.push(
-      { icon:'search', text:'运行性能测试，验证系统在高负载下的表现...', delay:900 },
-      { icon:'found', text:'性能数据：响应时间P99=187ms，TPS达到1240，符合预期指标。', delay:500 },
+      { icon:'search', text:'新系统必须经过压力测试的考验。我用JMeter模拟了高并发场景，逐步增加并发用户数，看看系统在极限负载下的表现如何。', delay:900 },
+      { icon:'found', text:'压测数据出来了：P99响应时间187ms，TPS达到1240，CPU和内存使用率都在健康范围内。这个性能表现完全符合我们当初设定的指标，甚至比预期还好一些。', delay:500 },
     );
   }
   steps.push(
-    { type:'decision', icon:'decide', text:'验证全部通过。', delay:300,
+    { type:'decision', icon:'decide', text:'功能验证和性能测试都通过了，系统质量有保障。接下来就是上线部署了，您倾向哪种发布方式？我推荐灰度发布，稳妥一些。', delay:300,
       question:'选择上线策略？',
       options:[
         { label:'全量上线', desc:'直接部署到所有节点', value:'full' },
@@ -920,29 +966,29 @@ function script_verify(isRework) {
         { label:'蓝绿部署', desc:'新旧集群并行，一键切换', value:'bluegreen' },
       ],
     },
-    { icon:'done', text:'验证完成，系统功能和性能均满足要求。', delay:600 },
+    { icon:'done', text:'验证全部完成——功能全面覆盖、性能达标、质量可靠。系统已经准备好上线了。', delay:600 },
   );
   return steps;
 }
 
 function script_delivery(isRework) {
   let steps = [
-    { icon:'think', text:'所有工作完成，整理交付物。', delay:500 },
-    { icon:'search', text:'收集各阶段产出的文档和代码...', delay:700 },
-    { icon:'found', text:'整理完成：架构文档、API规范、部署手册等已归集。', delay:500 },
+    { icon:'think', text:'所有工作都做完了，最后一步——整理交付物，把这段时间产出的所有东西打包好，干干净净地交到您手上。', delay:500 },
+    { icon:'search', text:'让我把各阶段产出的东西归归类：调研阶段的业务分析文档、设计阶段的架构图和API规范、实现阶段的源代码和配置文件、测试阶段的测试报告和性能数据... 都得整理好。', delay:700 },
+    { icon:'found', text:'整理完毕！交付物汇总：架构设计文档（含系统架构图、模块依赖图）、完整API规范（OpenAPI格式）、部署运维手册（含环境要求、启动脚本、监控配置）、全套源代码及构建脚本。另外还有一份README写了项目概览和开发指南。', delay:500 },
   ];
   if (isRework) {
     steps.push(
-      { icon:'info', text:'二次开发需要额外提供：改造影响说明、数据迁移脚本。', delay:600 },
-      { icon:'done', text:'切换方案：灰度发布 10% → 30% → 100%，观察48小时后旧版下线。', delay:700 },
+      { icon:'info', text:'因为是二次改造项目，额外准备了改造影响分析报告——详细说明了哪些模块被修改、哪些接口有变更、数据迁移的方案和回滚策略。运维同事拿到手就能直接操作。', delay:600 },
+      { icon:'done', text:'上线切换方案也写好了：灰度发布，先放10%流量观察半小时，没问题扩大到30%，再观察没问题就全量100%。全部完成后观察48小时再下线旧版本。每个步骤都有回滚按钮。', delay:700 },
     );
   } else {
     steps.push(
-      { icon:'done', text:'新系统采用蓝绿部署策略，零宕机上线。', delay:600 },
-      { icon:'info', text:'后续可考虑：多租户支持、国际化、审计日志增强等方向迭代。', delay:500 },
+      { icon:'done', text:'新系统的部署方案采用蓝绿策略——保持新旧两套集群并行运行，通过负载均衡一键切换流量。上线过程零宕机，就算出了问题也能秒级回滚，用户无感知。', delay:600 },
+      { icon:'info', text:'这次交付的是第一版，后续迭代可以考虑几个方向：多租户支持（不同客户共用一套系统）、国际化（多语言多币种）、审计日志增强（满足合规要求）。这些可以作为下一阶段的规划参考。', delay:500 },
     );
   }
-  steps.push({ type:'confirm', icon:'done', text:'交付物已全部就绪。', btnText:'确认交付完成 →', delay:300 });
+  steps.push({ type:'confirm', icon:'done', text:'交付物已经全部就绪，随时可以提交。您过目一下，没问题的话我就打包交付了。', btnText:'确认交付完成 →', delay:300 });
   return steps;
 }
 
@@ -1032,10 +1078,10 @@ function hvcScript_verify() {
 
 function hvcScript_delivery() {
   return [
-    { icon:'think', text:'整理交付物。', delay:500 },
-    { icon:'search', text:'收集策略模板、编排脚本、监控看板、运维手册...', delay:700 },
-    { icon:'found', text:'归档完成：12 个策略模板、5 个编排流程、3 个 Grafana 看板、1 份运维手册。', delay:600 },
-    { type:'confirm', icon:'done', text:'全部交付物已就绪。', btnText:'确认交付完成 →', delay:300 },
+    { icon:'think', text:'整个保障项目做完了，最后一步是把所有成果物整理好，交到运维团队手里。他们要能照着文档直接上手运维。', delay:500 },
+    { icon:'search', text:'让我把分散在各个阶段的产出收集起来——策略配置模板（XML和CLI格式都有）、Agent编排脚本、Grafana监控看板的JSON定义、还有给运维团队写的操作手册... 都过一遍确保完整性。', delay:700 },
+    { icon:'found', text:'全部归档完成：交付物清单——<span class="ok">12份策略模板</span>（含QoS/ACL/带宽策略）、<span class="ok">5个编排流程</span>（事件触发→SLA匹配→策略下发→监控→调优）、<span class="ok">3个Grafana看板</span>（实时监控/日报/周报）、<span class="ok">1份运维手册</span>（含故障处理SOP）。', delay:600 },
+    { type:'confirm', icon:'done', text:'所有交付物已经准备就绪，随时可以提交给运维团队。您检查一下，没问题的话就可以正式交付了。', btnText:'确认交付完成 →', delay:300 },
   ];
 }
 
@@ -1175,7 +1221,17 @@ async function execPhase(idx) {
 
     for(let i=0; i<events.length; i++) {
       const ev = events[i];
-      const delay = ev.delay || rand(500,1200);
+      // Realistic AI thinking pace — match real LLM inference feel
+      const mindTime = ev.icon === 'think' ? rand(2800, 5000) :
+                       ev.icon === 'decide' ? rand(2500, 4500) :
+                       ev.icon === 'search' ? rand(2000, 3500) :
+                       ev.icon === 'retry' ? rand(1800, 3200) :
+                       ev.icon === 'skill' ? rand(1500, 2800) :
+                       ev.icon === 'found' ? rand(1000, 2200) :
+                       ev.icon === 'info' || ev.icon === 'ref' ? rand(1000, 2000) :
+                       ev.icon === 'done' || ev.icon === 'skip' ? rand(600, 1500) :
+                       rand(1200, 2500);
+      const delay = ev.delay !== undefined ? Math.round(ev.delay * (1.5 + Math.random() * 1.2)) : mindTime;
 
       // Contextual typing label
       const labels = { think:'思考中', search:'搜索中', found:'获取结果', retry:'重试中', fail:'处理异常', decide:'决策中', done:'确认', wait:'等待', info:'分析中', ref:'查阅资料', skip:'跳过', skill:'匹配skill' };
@@ -1328,7 +1384,7 @@ async function startProcess(text) {
       await sleep(300);
       await execPhase(i);
       if(i < PHASES_HVC.length-1) { flowArrow(); sb(); }
-        await sleep(200);
+        await sleep(1000);
       } catch(e) {
         toast('⚠️ Phase loop error: '+e.message);
         console.error('startProcess loop error', i, e);
@@ -1415,7 +1471,7 @@ async function startProcess(text) {
       // Arrow between phases
       if(i < PHASES.length-1) { flowArrow(); sb(); }
 
-      await sleep(200);
+      await sleep(1000);
     } catch(e) {
       toast('⚠️ Phase loop error: '+e.message);
       console.error('startProcess loop error', i, e);
