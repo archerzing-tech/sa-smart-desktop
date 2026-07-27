@@ -494,6 +494,94 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   display:flex;align-items:center;gap:6px;transition:all .2s
 }
 .final-summary .fs-dl .dl-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+
+/* Report summary card — analysis conclusion before user confirmation */
+.report-card{
+  clear:both;margin:12px 0 6px;
+  animation:rc-in .5s cubic-bezier(.22,1,.36,1)
+}
+@keyframes rc-in{from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)}}
+.report-card .rc-inner{
+  position:relative;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:hidden
+}
+.report-card .rc-accent{
+  position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(180deg,var(--accent),var(--accent-light))
+}
+.report-card .rc-body{padding:16px 18px 14px 22px}
+.report-card .rc-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px
+}
+.report-card .rc-icon{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0
+}
+.report-card .rc-title{
+  font-size:12px;font-weight:600;color:var(--text);font-family:var(--mono);letter-spacing:.5px;
+  text-transform:uppercase
+}
+.report-card .rc-subtitle{
+  font-size:10px;color:var(--text-muted);font-family:var(--mono);margin-left:auto
+}
+.report-card .rc-content{
+  font-size:13.5px;line-height:1.7;color:var(--text);
+  background:var(--accent-bg);border-radius:var(--radius-sm);
+  padding:14px 16px;margin-top:2px
+}
+.report-card .rc-content .hl{color:var(--accent);font-weight:600}
+.report-card .rc-content .ok{color:var(--green);font-weight:500}
+.report-card .rc-content .dim{color:var(--text-muted)}
+.report-card .rc-content .rc-p{font-size:13px;line-height:1.65;margin-bottom:8px;color:var(--text-secondary)}
+.report-card .rc-content .rc-lab{display:block;font-size:10px;font-weight:600;color:var(--text-muted);font-family:var(--mono);letter-spacing:.8px;text-transform:uppercase;margin:12px 0 6px}
+.report-card .rc-content .rc-lab:first-child{margin-top:0}
+.report-card .rc-content .rc-find{
+  display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(79,70,229,.08)
+}
+.report-card .rc-content .rc-find:last-child{border-bottom:none}
+.report-card .rc-content .rc-find .rc-fi{flex-shrink:0;width:18px;text-align:center;font-size:12px;margin-top:2px}
+.report-card .rc-content .rc-find .rc-ft{font-size:12.5px;line-height:1.55;color:var(--text)}
+.report-card .rc-content .rc-find .rc-ft .tag{
+  display:inline-block;font-size:9.5px;padding:0 6px;border-radius:3px;font-family:var(--mono);font-weight:500;margin-right:3px
+}
+.report-card .rc-content .rc-find .rc-ft .tag.p{background:#eef2ff;color:#4f46e5}
+.report-card .rc-content .rc-find .rc-ft .tag.g{background:#ecfdf7;color:#10b981}
+.report-card .rc-content .rc-find .rc-ft .tag.y{background:#fff8eb;color:#d97706}
+.report-card .rc-content .rc-met{
+  display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px
+}
+.report-card .rc-content .rc-met .rc-mi{
+  flex:1;min-width:80px;text-align:center;padding:8px 6px;
+  background:var(--surface);border-radius:6px;border:1px solid rgba(79,70,229,.1)
+}
+.report-card .rc-content .rc-met .rc-mi .rc-mv{font-size:16px;font-weight:700;color:var(--accent);line-height:1.2}
+.report-card .rc-content .rc-met .rc-mi .rc-ml{font-size:9.5px;color:var(--text-muted);margin-top:1px;font-family:var(--mono)}
+.report-card .rc-divider{
+  height:1px;background:var(--border-light);margin:10px 0 8px
+}
+.report-card .rc-details{
+  max-height:0;overflow:hidden;opacity:0;
+  transition:max-height .5s cubic-bezier(.22,1,.36,1),opacity .4s ease,margin .4s;
+  margin:0
+}
+.report-card .rc-details .rc-find:first-child{margin-top:8px}
+.report-card.rc-expanded .rc-details{
+  max-height:3000px;opacity:1;margin:4px 0 0
+}
+.report-card .rc-toggle-hint{cursor:pointer;color:var(--accent);font-weight:500;transition:color .2s}
+.report-card .rc-toggle-hint:hover{color:var(--accent-light)}
+.report-card .rc-footer{
+  display:flex;align-items:center;gap:6px;padding-top:6px
+}
+.report-card .rc-footer .rc-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px var(--green);animation:rc-dot-pulse 1.6s ease-in-out infinite
+}
+@keyframes rc-dot-pulse{0%,100%{opacity:.5} 50%{opacity:1}}
+.report-card .rc-footer .rc-status{
+  font-size:10px;color:var(--text-muted);font-family:var(--mono)
+}
 </style>
 </head>
 <body>
@@ -591,6 +679,29 @@ const ts = () => new Date().toTimeString().slice(0, 8);
 function rand(min, max) { return Math.random() * (max - min) + min; }
 
 function sb() { requestAnimationFrame(() => { try { dom.wsBody.scrollTop = dom.wsBody.scrollHeight; }catch(e){} }); }
+
+// Typewriter effect — reveal text character by character, preserving HTML tags
+async function typeText(el, html) {
+  if(!html) return;
+  let revealed = 0;
+  el.innerHTML = '';
+  while(revealed < html.length) {
+    let nextLen = revealed + 1;
+    let partial = html.substring(0, nextLen);
+    // If we're mid-tag, extend to include the closing >
+    const lastOpen = partial.lastIndexOf('<');
+    const lastClose = partial.lastIndexOf('>');
+    if(lastOpen > lastClose) {
+      const closeIdx = html.indexOf('>', nextLen - 1);
+      if(closeIdx !== -1) nextLen = closeIdx + 1;
+    }
+    el.innerHTML = html.substring(0, nextLen);
+    revealed = nextLen;
+    if(revealed % 4 === 0) sb(); // debounce scroll — every 4th char
+    await sleep(rand(4, 10));
+  }
+  sb(); // final scroll when done
+}
 
 // Thinking bubble — shown inside conversation while AI processes
 let _tbEl = null;
@@ -853,6 +964,179 @@ function evHTML(icon, text, sub) {
   return `<div class="ev"><div class="ev-icon">${icon}</div><div class="ev-body"><div class="ev-t">${text}</div>${sub ? `<div class="ev-sub">${sub}</div>` : ''}</div></div>`;
 }
 
+// Report summary card — renders analysis conclusion as a professional report
+function summaryHTML(phaseType) {
+  // Generate a structured summary for the report card based on phase type
+  // These are mock summaries that look like real AI analysis reports
+  const summaries = {
+    'intent-confirm': `
+<div class="rc-p">经过多维度分析，本次需求已明确定位。以下是分析结论：</div>
+<div class="rc-lab">🔍 关键发现</div>
+<div class="rc-find"><span class="rc-fi">1</span><span class="rc-ft"><span class="tag p">需求类型</span>新业务构建 —— 从零开始搭建一套完整系统</span></div>
+<div class="rc-find"><span class="rc-fi">2</span><span class="rc-ft"><span class="tag p">业务领域</span>电商订单管理 + 配置管理双核心</span></div>
+<div class="rc-find"><span class="rc-fi">3</span><span class="rc-ft"><span class="tag p">核心诉求</span>配置化 —— 业务人员可自主调整规则，无需改代码</span></div>
+<div class="rc-find"><span class="rc-fi">4</span><span class="rc-ft"><span class="tag p">执行策略</span>完整 5 阶段流程：调研 → 设计 → 实现 → 测试 → 部署</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">5</div><div class="rc-ml">执行阶段</div></div>
+  <div class="rc-mi"><div class="rc-mv">2</div><div class="rc-ml">参考来源</div></div>
+  <div class="rc-mi"><div class="rc-mv">配置化</div><div class="rc-ml">核心方向</div></div>
+</div>`,
+    'planning-confirm': `
+<div class="rc-p">规划方案已制定完毕，按 skill 标准化流程拆解为可执行路径：</div>
+<div class="rc-lab">📋 执行规划</div>
+<div class="rc-find"><span class="rc-fi">📖</span><span class="rc-ft"><span class="tag p">调研阶段</span>需求确认、领域建模、技术选型、竞品分析</span></div>
+<div class="rc-find"><span class="rc-fi">🎨</span><span class="rc-ft"><span class="tag p">设计阶段</span>架构设计、接口定义、数据模型、原型验证</span></div>
+<div class="rc-find"><span class="rc-fi">💻</span><span class="rc-ft"><span class="tag p">实现阶段</span>编码开发、单元测试、代码评审、持续集成</span></div>
+<div class="rc-find"><span class="rc-fi">🧪</span><span class="rc-ft"><span class="tag p">测试阶段</span>集成测试、压力测试、安全审计、UAT验收</span></div>
+<div class="rc-find"><span class="rc-fi">🚀</span><span class="rc-ft"><span class="tag p">部署阶段</span>环境准备、灰度发布、监控部署、运维交接</span></div>`,
+    'planning-decision': `
+<div class="rc-p">项目拆解为 5 阶段方案，总预估 4-6 周。各阶段任务边界清晰，可根据实际情况调整节奏。以下是两种推进方式对比：</div>
+<div class="rc-lab">⚡ 方案对比</div>
+<div class="rc-find"><span class="rc-fi">📐</span><span class="rc-ft"><span class="tag p">标准推进</span>按 5 阶段顺序执行，每阶段完成后评审再进入下一阶段。适合需求稳定、变更少的项目。总工期约 6 周。</span></div>
+<div class="rc-find"><span class="rc-fi">⚡</span><span class="rc-ft"><span class="tag p">快速推进</span>设计完成后即启动部分实现工作，测试与修复并行。适合需求明确、团队响应快的项目。总工期约 4 周。</span></div>`,
+    'execution-confirm': `
+<div class="rc-p">架构设计方案已完成评审，模块划分清晰，接口定义明确。以下是设计概要：</div>
+<div class="rc-lab">🏗️ 架构概览</div>
+<div class="rc-find"><span class="rc-fi">🖥️</span><span class="rc-ft"><span class="tag p">展示层</span>前端 SPA + 后端 API Gateway，RESTful 接口</span></div>
+<div class="rc-find"><span class="rc-fi">⚙️</span><span class="rc-ft"><span class="tag p">应用层</span>订单服务、配置服务、用户服务、通知服务</span></div>
+<div class="rc-find"><span class="rc-fi">📦</span><span class="rc-ft"><span class="tag p">领域层</span>核心业务逻辑 + 规则引擎（可配置）</span></div>
+<div class="rc-find"><span class="rc-fi">🗄️</span><span class="rc-ft"><span class="tag p">基础设施</span>PostgreSQL + Redis + Kafka + 对象存储</span></div>`,
+    'verify-decision': `
+<div class="rc-p">功能验证和性能测试全部通过，系统质量达标。以下是测试摘要：</div>
+<div class="rc-lab">📊 测试结果</div>
+<div class="rc-find"><span class="rc-fi">✅</span><span class="rc-ft"><span class="tag g">功能测试</span>全部 126 个用例通过，覆盖率 92%</span></div>
+<div class="rc-find"><span class="rc-fi">⚡</span><span class="rc-ft"><span class="tag g">性能测试</span>P99 响应 187ms，TPS 1240，CPU/内存健康</span></div>
+<div class="rc-find"><span class="rc-fi">🔒</span><span class="rc-ft"><span class="tag g">安全审计</span>无高危漏洞，中危 2 项已修复</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">187ms</div><div class="rc-ml">P99 延迟</div></div>
+  <div class="rc-mi"><div class="rc-mv">1240</div><div class="rc-ml">TPS</div></div>
+  <div class="rc-mi"><div class="rc-mv">92%</div><div class="rc-ml">覆盖率</div></div>
+</div>
+<div class="rc-p">现提供两种上线策略供选择：全量上线（直达所有节点）或灰度发布（先小范围验证后全量铺开）。</div>`,
+    'delivery-confirm': `
+<div class="rc-p">全部交付物已整理归档，覆盖项目全生命周期。以下是交付清单：</div>
+<div class="rc-lab">📦 交付物清单</div>
+<div class="rc-find"><span class="rc-fi">📄</span><span class="rc-ft"><span class="tag p">文档</span>架构设计文档、API 规范（OpenAPI）、部署运维手册、README</span></div>
+<div class="rc-find"><span class="rc-fi">💻</span><span class="rc-ft"><span class="tag p">源码</span>完整项目代码 + 构建脚本 + Docker 编排文件</span></div>
+<div class="rc-find"><span class="rc-fi">🧪</span><span class="rc-ft"><span class="tag p">测试</span>测试用例集、压测报告、安全审计报告</span></div>
+<div class="rc-find"><span class="rc-fi">📊</span><span class="rc-ft"><span class="tag p">运维</span>监控看板 JSON、日志收集配置、告警规则模板</span></div>
+<div class="rc-lab" style="margin-top:10px">💡 后续建议</div>
+<div class="rc-p">第一版交付后，可规划多租户支持、国际化（多语言多币种）以及审计日志增强等迭代方向。</div>`,
+    'hvc-intent-confirm': `
+<div class="rc-p">已完成 HKT 现网环境分析，保障策略框架已确定。以下是分析结论：</div>
+<div class="rc-lab">🔍 环境概况</div>
+<div class="rc-find"><span class="rc-fi">🌐</span><span class="rc-ft"><span class="tag p">网络拓扑</span>三层架构：接入层 (OLT/MA5800) → 汇聚层 (ASR9000) → 核心层 (MX960)</span></div>
+<div class="rc-find"><span class="rc-fi">⚙️</span><span class="rc-ft"><span class="tag p">设备能力</span>全链路支持 HQoS + WRED + TE-FRR，层次化 QoS 可用</span></div>
+<div class="rc-find"><span class="rc-fi">🎯</span><span class="rc-ft"><span class="tag p">保障策略</span>端到端差异化保障：接入层标记优先级 → 汇聚层调度 → 核心层快速收敛</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">3</div><div class="rc-ml">网络层级</div></div>
+  <div class="rc-mi"><div class="rc-mv">3</div><div class="rc-ml">设备厂商</div></div>
+  <div class="rc-mi"><div class="rc-mv">端到端</div><div class="rc-ml">保障范围</div></div>
+</div>`,
+    'hvc-planning-decision': `
+<div class="rc-p">规划方案参照 3GPP/ETSI 标准框架制定，结合 HKT 现网实际情况。以下是执行计划：</div>
+<div class="rc-lab">📋 5 阶段执行计划</div>
+<div class="rc-find"><span class="rc-fi">1</span><span class="rc-ft"><span class="tag p">需求分析</span>明确保障范围、SLA 指标、用户分级</span></div>
+<div class="rc-find"><span class="rc-fi">2</span><span class="rc-ft"><span class="tag p">策略设计</span>转化保障方案为设备可执行的 QoS/ACL/PBR 策略</span></div>
+<div class="rc-find"><span class="rc-fi">3</span><span class="rc-ft"><span class="tag p">现网适配</span>确保策略与现网配置不冲突，做兼容性验证</span></div>
+<div class="rc-find"><span class="rc-fi">4</span><span class="rc-ft"><span class="tag p">验证测试</span>实验室模拟现网流量，验证各等级 SLA 达标</span></div>
+<div class="rc-find"><span class="rc-fi">5</span><span class="rc-ft"><span class="tag p">灰度上线</span>先接 1 个场馆验证，逐步铺开至全部场馆</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">6周</div><div class="rc-ml">预估工期</div></div>
+  <div class="rc-mi"><div class="rc-mv">4人</div><div class="rc-ml">团队配置</div></div>
+  <div class="rc-mi"><div class="rc-mv">6种</div><div class="rc-ml">设备型号</div></div>
+</div>`,
+    'hvc-execution-confirm': `
+<div class="rc-p">实施设计阶段已完成，所有方案均可落地执行。以下是产出概览：</div>
+<div class="rc-lab">📦 方案产出</div>
+<div class="rc-find"><span class="rc-fi">📊</span><span class="rc-ft"><span class="tag p">SLA 映射</span>VVIP → 金级 · VIP → 银级 · 普通 → 铜级，每级 5 项 KPI 指标</span></div>
+<div class="rc-find"><span class="rc-fi">🔮</span><span class="rc-ft"><span class="tag p">流量预测</span>预售数据驱动，提前 2h 预配置，活动期间实时微调</span></div>
+<div class="rc-find"><span class="rc-fi">🤖</span><span class="rc-ft"><span class="tag p">Agent 编排</span>事件触发 → SLA 匹配 → 策略推送 → 监控 → 调优，全链路闭环</span></div>
+<div class="rc-find"><span class="rc-fi">🛡️</span><span class="rc-ft"><span class="tag p">动态调优</span>实时 MOS/时延/丢包率采集，阈值触发自动调整 QoS 参数</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">12</div><div class="rc-ml">策略模板</div></div>
+  <div class="rc-mi"><div class="rc-mv">5</div><div class="rc-ml">编排流程</div></div>
+  <div class="rc-mi"><div class="rc-mv">3</div><div class="rc-ml">监控看板</div></div>
+</div>`,
+    'hvc-verify-decision': `
+<div class="rc-p">实验室验证完成，VIP/VVIP 体验达标，普通用户未受显著影响。以下是验证数据：</div>
+<div class="rc-lab">📊 验证结果</div>
+<div class="rc-find"><span class="rc-fi">📈</span><span class="rc-ft"><span class="tag g">VIP 用户</span>MOS 均值 4.2+（目标 4.0），丢包率 0.01%，时延 18ms</span></div>
+<div class="rc-find"><span class="rc-fi">👥</span><span class="rc-ft"><span class="tag g">普通用户</span>MOS 3.1，无明显劣化 · 保障策略公平有效</span></div>
+<div class="rc-find"><span class="rc-fi">🏋️</span><span class="rc-ft"><span class="tag g">极限负载</span>5 万用户并发模拟通过，系统稳定无告警</span></div>
+<div class="rc-met">
+  <div class="rc-mi"><div class="rc-mv">4.2+</div><div class="rc-ml">VIP MOS</div></div>
+  <div class="rc-mi"><div class="rc-mv">0.01%</div><div class="rc-ml">丢包率</div></div>
+  <div class="rc-mi"><div class="rc-mv">5万</div><div class="rc-ml">并发用户</div></div>
+</div>
+<div class="rc-p">现提供两种上线策略供选择：灰度上线（先 1 个场馆验证后全量）或全量上线（直接部署所有场馆）。建议灰度，更稳妥。</div>`,
+    'hvc-delivery-confirm': `
+<div class="rc-p">全部交付物已整理归档，运维团队可直接接手。以下是交付清单：</div>
+<div class="rc-lab">📦 交付物清单</div>
+<div class="rc-find"><span class="rc-fi">📄</span><span class="rc-ft"><span class="tag p">策略模板</span>12 份 —— QoS/ACL/带宽策略 XML + CLI 格式</span></div>
+<div class="rc-find"><span class="rc-fi">🤖</span><span class="rc-ft"><span class="tag p">编排流程</span>5 个 —— 事件触发 → SLA 匹配 → 策略下发 → 监控 → 调优</span></div>
+<div class="rc-find"><span class="rc-fi">📊</span><span class="rc-ft"><span class="tag p">监控看板</span>3 个 Grafana 看板 —— 实时总览 / 用户分级 / 故障告警</span></div>
+<div class="rc-find"><span class="rc-fi">📘</span><span class="rc-ft"><span class="tag p">运维手册</span>1 份完整 SOP —— 含部署、故障处理、回滚流程</span></div>
+<div class="rc-lab" style="margin-top:10px">💡 后续建议</div>
+<div class="rc-p">建议建立定期策略审计机制，每季度 review 一次 SLA 达标情况。同时可考虑引入 AI 预测性保障，进一步提升保障效率。</div>`
+  };
+  return summaries[phaseType] || `<div class="rc-p">分析完成，以下是结论摘要：</div><div class="rc-find"><span class="rc-fi">✅</span><span class="rc-ft">方案已就绪，等待确认。</span></div>`;
+}
+
+function showReportCard(container, text, type, summaryKey) {
+  const titles = {
+    confirm: { icon:'📋', title:'分析结论报告', status:'等待确认' },
+    decision: { icon:'📊', title:'方案评估报告', status:'请选择方案' }
+  };
+  const cfg = titles[type] || { icon:'📋', title:'分析摘要', status:'请确认' };
+  const content = summaryKey ? summaryHTML(summaryKey) : text;
+  const card = document.createElement('div');
+  card.className = 'report-card';
+  card.innerHTML = `<div class="rc-inner">
+    <div class="rc-accent"></div>
+    <div class="rc-body">
+      <div class="rc-header">
+        <div class="rc-icon">${cfg.icon}</div>
+        <div class="rc-title">${cfg.title}</div>
+        <div class="rc-subtitle">SA · ${ts()}</div>
+      </div>
+      <div class="rc-divider"></div>
+      <div class="rc-content">${content}</div>
+      <div class="rc-footer">
+        <span class="rc-dot"></span>
+        <span class="rc-status">${cfg.status}<span class="rc-toggle-hint" style="display:none"> · 展开详情 ▸</span></span>
+      </div>
+    </div>
+  </div>`;
+  container.appendChild(card);
+  // Restructure: wrap detailed items into .rc-details for collapsible behavior
+  if(summaryKey) {
+    const contentEl = card.querySelector('.rc-content');
+    if(contentEl && contentEl.children.length > 1) {
+      const details = document.createElement('div');
+      details.className = 'rc-details';
+      while(contentEl.children.length > 1) {
+        details.appendChild(contentEl.children[1]);
+      }
+      contentEl.appendChild(details);
+    }
+    }
+  }
+  // Show toggle only if details were created
+  const toggle = card.querySelector('.rc-toggle-hint');
+  const detailsEl = card.querySelector('.rc-details');
+  if(toggle && detailsEl) {
+    toggle.style.display = 'inline';
+    toggle.onclick = function(e) {
+      e.stopPropagation();
+      card.classList.toggle('rc-expanded');
+      toggle.innerHTML = card.classList.contains('rc-expanded') ? ' · 收起 ▾' : ' · 展开详情 ▸';
+      sb();
+    };
+  }
+  sb();
+}
+
 // ===== Realistic agent scripts per phase =====
 // Each script is an array of "events" that execute in sequence
 // Events: { icon, text, sub, delay, subAfter }
@@ -870,7 +1154,7 @@ function script_intent() {
     { icon:'found', text:'这次好多了！找到一份配置管理系统的设计指南，讲的是如何在订单系统中嵌入可配置的业务规则引擎，还有详细的架构建议。这篇内容跟用户需求的贴合度很高。', sub:'来源: 技术社区 · 发布于2025年', delay:500 },
     { icon:'decide', text:'综合两边的信息来看，用户真正要的是一个 <span class="hl">新业务构建</span> 类型的项目，所属领域是电商订单管理，但重点在于"配置化"——也就是要让业务人员能自己调整规则，不用每次都改代码。这个定位很清晰了。', delay:800 },
     { icon:'info', text:'对于这种从零开始的新业务系统，标准的做法是完整走一遍调研→设计→实现→测试→部署的流程，每个阶段都不能跳过，这样才能保证质量。回头执行的时候我再根据情况动态调整节奏。', delay:400 },
-    { type:'confirm', icon:'done', text:'方向分析这块我心里有数了，整体思路和关键判断都整理好了。您看看方向对不对，没问题的话咱们就进入规划阶段开始拆细节了。', btnText:'确认方向，继续 →', delay:300 },
+    { type:'confirm', icon:'done', summaryKey:'intent-confirm', text:'方向分析这块我心里有数了，整体思路和关键判断都整理好了。您看看方向对不对，没问题的话咱们就进入规划阶段开始拆细节了。', btnText:'确认方向，继续 →', delay:300 },
   ];
 }
 
@@ -884,7 +1168,7 @@ function script_planning() {
     { icon:'search', text:'让我翻一翻之前的项目数据，看看类似规模的项目每个阶段大概花了多少时间。有个电商后台项目跟这个需求规模差不多，可以作为参考基准。', delay:700 },
     { icon:'found', text:'参考数据拿到了。之前那个项目总共用了大概4周，一轮迭代下来，其中实现阶段占了将近一半的时间。考虑到这次需求有配置管理的复杂度，我给每个阶段适当留了点余量。', delay:500 },
     { icon:'done', text:'规划完成：确定5阶段执行方案，各阶段任务边界清晰，按 skill 流程推进。随时可以根据实际情况调整步调。', delay:500 },
-    { type:'decision', icon:'decide', text:'方案已经摆出来了，接下来就是进入执行阶段。不过在开始之前，想问问您倾向哪种推进方式？这会影响我后面排任务的优先级和节奏。', delay:300,
+    { type:'decision', icon:'decide', summaryKey:'planning-decision', text:'方案已经摆出来了，接下来就是进入执行阶段。不过在开始之前，想问问您倾向哪种推进方式？这会影响我后面排任务的优先级和节奏。', delay:300,
       question:'选择执行策略？',
       options:[
         { label:'标准推进', desc:'按5阶段方案顺序执行', value:'standard' },
@@ -933,7 +1217,7 @@ function script_execution(isAppend, isRework) {
     { icon:'search', text:'参考一下常见的订单管理系统架构模式... 单体、SOA、微服务、事件驱动... 各有利弊。还要考虑到配置管理这个特殊需求——业务规则引擎怎么嵌入。', delay:800 },
     { icon:'found', text:'找到一个不错的参考——一个开源订单系统的架构说明文档，虽然是2023年的版本了，但核心的分层思想、事件驱动模式、以及规则引擎的集成方式都非常有参考价值。', sub:'参考项目版本: 2.3 · 发布于2023年', delay:700 },
     { icon:'decide', text:'架构方案敲定了：采用经典的分层架构 <span class="hl">展示层 → 应用层 → 领域层 → 基础设施层</span>，再加上一个独立的规则引擎层来处理配置管理的需求。层与层之间通过接口隔离，灵活度高。', delay:800 },
-    { type:'confirm', icon:'done', text:'架构方案已经确认完毕，各个模块的职责和接口定义都清晰了。接下来就可以进入编码阶段了，您这边确认一下，我就往下推进了。', btnText:'开始编码 →', delay:300 },
+    { type:'confirm', icon:'done', summaryKey:'execution-confirm', text:'架构方案已经确认完毕，各个模块的职责和接口定义都清晰了。接下来就可以进入编码阶段了，您这边确认一下，我就往下推进了。', btnText:'开始编码 →', delay:300 },
     { icon:'done', text:'架构设计全部完成，模块划分、接口定义、数据流向都确定好了。进入编码实现阶段，同时测试验证也会跟上来，保证质量。', delay:600 },
   ];
 }
@@ -958,7 +1242,7 @@ function script_verify(isRework) {
     );
   }
   steps.push(
-    { type:'decision', icon:'decide', text:'功能验证和性能测试都通过了，系统质量有保障。接下来就是上线部署了，您倾向哪种发布方式？我推荐灰度发布，稳妥一些。', delay:300,
+    { type:'decision', icon:'decide', summaryKey:'verify-decision', text:'功能验证和性能测试都通过了，系统质量有保障。接下来就是上线部署了，您倾向哪种发布方式？我推荐灰度发布，稳妥一些。', delay:300,
       question:'选择上线策略？',
       options:[
         { label:'全量上线', desc:'直接部署到所有节点', value:'full' },
@@ -988,7 +1272,7 @@ function script_delivery(isRework) {
       { icon:'info', text:'这次交付的是第一版，后续迭代可以考虑几个方向：多租户支持（不同客户共用一套系统）、国际化（多语言多币种）、审计日志增强（满足合规要求）。这些可以作为下一阶段的规划参考。', delay:500 },
     );
   }
-  steps.push({ type:'confirm', icon:'done', text:'交付物已经全部就绪，随时可以提交。您过目一下，没问题的话我就打包交付了。', btnText:'确认交付完成 →', delay:300 });
+  steps.push({ type:'confirm', icon:'done', summaryKey:'delivery-confirm', text:'交付物已经全部就绪，随时可以提交。您过目一下，没问题的话我就打包交付了。', btnText:'确认交付完成 →', delay:300 });
   return steps;
 }
 
@@ -1004,33 +1288,33 @@ const HVC_REFS = {
 function hvcScript_intent() {
   const hasDetail = S.conversation === 'has_detail';
   return hasDetail ? [
-    { icon:'skill', text:'匹配到 HKT 高价值客户保障场景，正在加载 jic-telecom 领域知识库...', delay:700 },
-    { icon:'think', text:'需求已明确：面向 HKT 的 VIP/VVIP 用户在特定场馆的体验保障。', delay:600 },
-    { icon:'search', text:'分析 HKT 现网架构：接入层(OLT/DSLAM) → 汇聚层(SR/BNG) → 核心层(CR)...', delay:1000 },
-    { icon:'found', text:'找到 HKT 网络拓扑文档，确认设备型号及组网结构。', sub:'Huawei MA5800 · Cisco ASR9000 · Juniper MX960', delay:700 },
-    { icon:'search', text:'分析各层设备的 QoS 调控能力...', delay:900 },
-    { icon:'found', text:'设备能力分析完成：支持优先级队列、流量整形、ACL 过滤、动态带宽调整。', sub:'关键能力: 层次化 QoS · HQoS · WRED', delay:600 },
-    { icon:'decide', text:'核心策略：基于用户 SLA 等级的 <span class="hl">端到端差异化保障</span>，从接入侧即标记优先级。', delay:800 },
-    { icon:'info', text:'策略覆盖：接入层 HQoS → 汇聚层队列调度 → 核心层 TE-FRR 快速收敛。', delay:500 },
-    { type:'confirm', icon:'done', text:'HKT 现网分析和保障策略已完成。', btnText:'确认策略，进入规划 →', delay:300 },
+    { icon:'skill', text:'好，检测到这是一个 <span class="hl">HKT 高价值客户保障</span> 场景的请求。我来加载 jic-telecom 领域知识库——里面存了 HKT 的网络拓扑、设备规格、还有之前做过的保障案例。', delay:700 },
+    { icon:'think', text:'需求很明确：HKT 的 VIP 和 VVIP 用户在体育场馆或者演唱会这种人山人海的地方，网络不能卡不能断。要保证他们看视频、发朋友圈、甚至做直播都流畅。这种场景下普通用户和高端用户的体验必须是天壤之别。', delay:600 },
+    { icon:'search', text:'我先翻一翻 HKT 现网的架构文档——接入层用的什么设备、汇聚层怎么收敛、核心层怎么互联。这些信息决定了我能做哪些层面的保障策略。', delay:1000 },
+    { icon:'found', text:'找到了！网络拓扑文档显示：接入层是 OLT/DSLAM 汇聚到 MA5800，然后到 ASR9000 做业务汇聚，最后接入 MX960 核心路由器。三层架构，很典型的运营商组网。', sub:'Huawei MA5800 · Cisco ASR9000 · Juniper MX960', delay:700 },
+    { icon:'search', text:'现在挨个分析每层设备的 QoS 能力——接入层能不能做优先级标记？汇聚层支不支持 HQoS？核心层的 TE 能力怎么样？这些决定了保障策略能做到什么深度。', delay:900 },
+    { icon:'found', text:'设备能力摸清楚了！全链路都支持层次化 QoS：接入层可以做 ingress 优先级标记和队列调度，汇聚层支持 HQoS 做精细化带宽管控，核心层有 TE-FRR 快速重路由。另外 ACL 过滤和动态带宽调整也都有。', sub:'关键能力: 层次化 QoS · HQoS · WRED · TE-FRR', delay:600 },
+    { icon:'decide', text:'策略很清晰了——基于用户 SLA 等级的 <span class="hl">端到端差异化保障</span>。从用户接入的第一跳就开始打优先级标签，沿途每一层设备都按这个优先级做不同的调度处理。VVIP 的流量一路绿灯，普通用户按尽力而为处理。', delay:800 },
+    { icon:'info', text:'具体来说：接入层用 HQoS 做用户级带宽保障和优先级映射，汇聚层用队列调度区分不同 SLA 等级的流量，核心层用 TE-FRR 做快速故障收敛——万一链路断了也能在 50ms 内切换。三层联动，端到端拉通。', delay:500 },
+    { type:'confirm', icon:'done', summaryKey:'hvc-intent-confirm', text:'HKT 现网环境分析完了，保障策略的框架也搭好了。整体思路是分层保障、端到端拉通。您看看这套方案方向对不对？', btnText:'确认策略，进入规划 →', delay:300 },
   ] : [
-    { icon:'think', text:'收到需求："hvc保障agent"', delay:400 },
-    { icon:'think', text:'但我当前的信息量不足以理解具体场景。', delay:600 },
-    { icon:'search', text:'在知识库中搜索 "HVC" 相关定义...', delay:800 },
-    { icon:'found', text:'未找到明确匹配的业务场景。', sub:'需要更多上下文信息', delay:500 },
-    { icon:'decide', text:'信息不足，无法定位具体业务需求。', delay:600 },
+    { icon:'think', text:'收到需求："hvc保障agent"。嗯，这个名称指向的是高价值客户保障场景，但光凭这四个字我还不知道具体是要保障什么。', delay:400 },
+    { icon:'think', text:'让我想想... 是哪个场馆？什么类型的活动？有多少 VIP 用户？现网设备是什么样的？这些信息一个都没有。直接开始设计肯定不行，得先搞清楚上下文。', delay:600 },
+    { icon:'search', text:'不过我翻翻知识库看看，有没有存着 "HVC" 相关的定义或模板，说不定能找到一些默认配置。', delay:800 },
+    { icon:'found', text:'翻了一遍，知识库里没有明确匹配这个关键词的预置方案。看来这个场景需要用户提供更多上下文才能做针对性的设计。', sub:'需要更多上下文信息', delay:500 },
+    { icon:'decide', text:'信息确实不够，定位不了具体的业务需求。最好让用户补充一下：针对哪个运营商的哪个网络环境？什么类型的活动？大概的并发用户规模？有了这些我才能开始干活。', delay:600 },
   ];
 }
 
 function hvcScript_planning() {
   return [
-    { icon:'think', text:'基于 HKT 现有网络能力，拆解保障方案。', delay:500 },
-    { icon:'search', text:'参考 3GPP 网络切片标准和 ETSI NFV 架构...', delay:800 },
-    { icon:'found', text:'找到切片 + QoS 协同保障的最佳实践框架。', sub:'来源: 3GPP TS 23.501 · ETSI GS NFV 002', delay:600 },
-    { icon:'decide', text:'确定采用 <span class="hl">5 阶段方案</span>：需求分析 → 策略设计 → 现网适配 → 验证测试 → 灰度上线', delay:700 },
-    { icon:'search', text:'评估各阶段人力与工期...', delay:600 },
-    { icon:'found', text:'基于 HKT OSS/BSS 接口复杂度，预估 6 周交付。', sub:'团队配置: 网络工程师×2 · 系统集成×1 · QA×1', delay:500 },
-    { type:'decision', icon:'decide', text:'规划完成。', delay:300,
+    { icon:'think', text:'好，策略方向定了，现在要把这个端到端保障方案拆解成可以落地的任务计划。不能光有方向没路径，得一步一步来。', delay:500 },
+    { icon:'search', text:'我先翻翻业界标准参考——3GPP 的网络切片标准和 ETSI 的 NFV 架构规范，看看标准框架里是怎么定义端到端服务保障的流程的。', delay:800 },
+    { icon:'found', text:'找到了！3GPP TS 23.501 里定义了网络切片的管理编排框架，ETSI GS NFV 002 里讲了虚拟化的服务保障流程。两者结合起来，就是一个完整的切片+QoS 协同保障的最佳实践框架。', sub:'来源: 3GPP TS 23.501 · ETSI GS NFV 002', delay:600 },
+    { icon:'decide', text:'结合标准框架和 HKT 现网的实际情况，我决定采用 <span class="hl">5 阶段方案</span>来推进：先做需求分析，搞清楚保障范围和 SLA 指标；然后做策略设计，把保障方案转化成设备可执行的政策；接着做现网适配，确保策略跟现网配置不冲突；再搞验证测试，在实验室模拟现网流量；最后灰度上线，步步为营。', delay:700 },
+    { icon:'search', text:'现在来估算每个阶段需要多少人力和时间。HKT 的 OSS/BSS 接口比较复杂，策略下发需要通过网管系统，这块工作量不小。', delay:600 },
+    { icon:'found', text:'估算完成了：基于 HKT 现网的设备规模（3厂商、6种设备型号）和 OSS/BSS 接口复杂度，整个项目预估 6 周交付。团队配置建议：网络工程师 2 人（懂设备和协议）、系统集成 1 人（对接 OSS/BSS）、QA 1 人（做验收测试）。', sub:'团队配置: 网络工程师×2 · 系统集成×1 · QA×1', delay:500 },
+    { type:'decision', icon:'decide', summaryKey:'hvc-planning-decision', text:'规划方案已经清楚了——5 个阶段、6 周交付。不过具体怎么推进可以根据实际情况灵活调整，您倾向哪种节奏？', delay:300,
       question:'选择实施方案？',
       options:[
         { label:'标准交付', desc:'6周，全流程覆盖', value:'standard' },
@@ -1043,28 +1327,28 @@ function hvcScript_planning() {
 
 function hvcScript_execution() {
   return [
-    { icon:'think', text:'进入设计实施阶段。首先定义保障粒度。', delay:500 },
-    { icon:'search', text:'设计用户 SLA 等级映射表...', delay:800 },
-    { icon:'found', text:'完成等级映射：VVIP → 金级 (PBR+HQoS) · VIP → 银级 (队列优先) · 普通 → 铜级 (尽力而为)', delay:600 },
-    { icon:'think', text:'设计场馆流量预测模型和动态阈值。', delay:500 },
-    { icon:'search', text:'参考历史赛事流量数据和场馆容量模型...', delay:700 },
-    { icon:'found', text:'完成模型：基于预售票数+历史同期数据，提前 2h 预测并预配资源。', delay:500 },
-    { icon:'decide', text:'决定采用 <span class="hl">预测+实时协同</span> 策略，Pre-config + Real-time adjust。', delay:700 },
-    { icon:'search', text:'开发 Agent 编排逻辑...', delay:800 },
-    { icon:'found', text:'Agent 核心流程：场馆事件触发 → SLA 匹配 → 设备策略推送 → 效果监控 → 动态调优。', delay:600 },
-    { type:'confirm', icon:'done', text:'实施设计完成。', btnText:'进入验证 →', delay:300 },
-    { icon:'done', text:'开发完成：新增 12 个策略模板、5 个编排流程、3 个监控面板。', delay:600 },
+    { icon:'think', text:'规划和方案都定下来了，现在进入设计实施阶段。第一步想的问题是——保障要做到什么粒度？是按用户级别区分，还是按应用类型区分，还是两者结合？', delay:500 },
+    { icon:'search', text:'我先设计用户 SLA 等级映射表——把业务上的 VIP/VVIP/普通用户映射到网络设备上能识别的 QoS 等级。不同等级对应不同的带宽、优先级和队列策略。', delay:800 },
+    { icon:'found', text:'映射表做好了：<span class="ok">VVIP → 金级</span>（PBR 策略路由 + HQoS 硬保障，优先队列，带宽保底 50Mbps）、<span class="ok">VIP → 银级</span>（队列优先调度，带宽保底 10Mbps）、<span class="ok">普通 → 铜级</span>（尽力而为，共享带宽池）。等级之间通过 DSCP 标记区分，沿途设备按标记做对应处理。', delay:600 },
+    { icon:'think', text:'SLA 映射搞定了，接下来要考虑的是——保障策略不是静态的，场馆里的人流量是动态变化的。开场前、比赛中、散场时，流量模型完全不一样。需要一个能预测流量并动态调整的机制。', delay:500 },
+    { icon:'search', text:'找来历史赛事的话单数据和场馆容量模型做参考——之前红馆演唱会最高峰并发多少？哪些时间段流量最密集？不同区域的分布情况如何？', delay:700 },
+    { icon:'found', text:'分析完成！基于预售票数和历史同期数据建立了预测模型：可以在活动开始前 2 小时根据已售票数预测最高并发量，提前预配置带宽资源。比赛进行中根据实时流量动态微调阈值，散场时提前扩容保证用户离场时的通信体验。', delay:500 },
+    { icon:'decide', text:'策略确定了——采用 <span class="hl">预测+实时协同</span> 的双模策略。预测阶段：预售数据驱动，提前 2h 做预配置。实时阶段：网管监控驱动，根据真实流量做微调。两套机制互补，既防止突发又避免资源浪费。', delay:700 },
+    { icon:'search', text:'策略定好了，现在来开发 Agent 的编排逻辑——把整个保障流程固化下来，做成可重复执行的自动化流程。从事件触发到策略下发的全链路都要覆盖。', delay:800 },
+    { icon:'found', text:'Agent 的核心编排流程定义完成：<span class="ok">活动事件触发</span>（根据场馆日程自动激活）→ <span class="ok">SLA 匹配</span>（识别用户等级和应用类型）→ <span class="ok">策略推送</span>（通过网管下发到对应设备）→ <span class="ok">效果监控</span>（实时采集 MOS/时延/丢包率）→ <span class="ok">动态调优</span>（根据实时数据调整参数）。整套流程闭环运作。', delay:600 },
+    { type:'confirm', icon:'done', summaryKey:'hvc-execution-confirm', text:'实施设计阶段完成了——SLA 映射、流量预测、动态调优、Agent 编排，整套方案都可以落地了。', btnText:'进入验证 →', delay:300 },
+    { icon:'done', text:'开发产出汇总：新增策略模板 12 个（含 QoS/ACL/PBR 模板）、编排流程 5 个（覆盖各类活动场景）、监控面板 3 个（实时总览/用户分级/故障告警）。可以进入验证阶段了。', delay:600 },
   ];
 }
 
 function hvcScript_verify() {
   return [
-    { icon:'think', text:'开始全面验证。', delay:500 },
-    { icon:'search', text:'搭建测试环境，模拟场馆高并发场景...', delay:800 },
-    { icon:'found', text:'模拟 50000 用户并发，其中 500 VIP/VVIP 混合流量。', delay:600 },
-    { icon:'search', text:'运行保障策略验证...', delay:900 },
-    { icon:'found', text:'结果：VIP 用户 MOS 保持 4.2+，丢包率 0.01%，时延 <20ms。', sub:'普通用户 MOS 3.1，无明显劣化', delay:600 },
-    { type:'decision', icon:'decide', text:'验证通过。', delay:300,
+    { icon:'think', text:'实施完成了，现在进入验证阶段。这个环节马虎不得——保障策略好不好使，不能靠拍脑袋，得用数据说话。我要在实验室里模拟真实的场馆高并发场景。', delay:500 },
+    { icon:'search', text:'开始搭建测试环境——用流量发生器模拟体育场馆的典型流量模型。参考之前红馆和香港大球场的真实数据，打造混合流量模型：视频流、网页浏览、社交网络、即时通讯全都要覆盖。', delay:800 },
+    { icon:'found', text:'测试环境准备就绪：模拟 <span class="ok">50000 用户</span>同时在线，其中 500 VIP/VVIP 用户占 1%，其余为普通用户。VIP 用户的流量中 60% 为视频流（保障重点），30% 为网页/社交，10% 为即时通讯。', delay:600 },
+    { icon:'search', text:'验证环境搭好了，开始正式跑验证——加载保障策略，逐步增加并发用户数，观察各等级用户的 KPI 指标变化。重点关注 MOS 分和丢包率这两个核心指标。', delay:900 },
+    { icon:'found', text:'验证结果出来了！<span class="ok">VIP 用户 MOS 均值 4.2+</span>（目标 4.0，超过预期），丢包率仅 0.01%，平均时延 18ms。普通用户 MOS 3.1，无明显劣化——说明我们的 HQoS 层次化保障策略生效了，保障了高优先级用户的同时没有过度挤压普通用户的资源。', sub:'普通用户 MOS 3.1，无明显劣化', delay:600 },
+    { type:'decision', icon:'decide', summaryKey:'hvc-verify-decision', text:'验证数据很好看，VIP/VVIP 体验达标，普通用户也没受影响。整套保障策略技术上是可行的。接下来怎么上线？我建议灰度，稳一手。', delay:300,
       question:'选择上线策略？',
       options:[
         { label:'灰度上线', desc:'先接 1 个场馆验证再铺开', value:'canary' },
@@ -1072,7 +1356,7 @@ function hvcScript_verify() {
         { label:'A/B 测试', desc:'新旧策略并行对比', value:'abtest' },
       ],
     },
-    { icon:'done', text:'验证完成，满足 HKT SLA 保障指标。', delay:600 },
+    { icon:'done', text:'验证全部完成——5 万用户并发压测通过，VIP 用户体验达标，普通用户无劣化。满足 HKT SLA 保障指标，系统可以上线了。', delay:600 },
   ];
 }
 
@@ -1081,7 +1365,7 @@ function hvcScript_delivery() {
     { icon:'think', text:'整个保障项目做完了，最后一步是把所有成果物整理好，交到运维团队手里。他们要能照着文档直接上手运维。', delay:500 },
     { icon:'search', text:'让我把分散在各个阶段的产出收集起来——策略配置模板（XML和CLI格式都有）、Agent编排脚本、Grafana监控看板的JSON定义、还有给运维团队写的操作手册... 都过一遍确保完整性。', delay:700 },
     { icon:'found', text:'全部归档完成：交付物清单——<span class="ok">12份策略模板</span>（含QoS/ACL/带宽策略）、<span class="ok">5个编排流程</span>（事件触发→SLA匹配→策略下发→监控→调优）、<span class="ok">3个Grafana看板</span>（实时监控/日报/周报）、<span class="ok">1份运维手册</span>（含故障处理SOP）。', delay:600 },
-    { type:'confirm', icon:'done', text:'所有交付物已经准备就绪，随时可以提交给运维团队。您检查一下，没问题的话就可以正式交付了。', btnText:'确认交付完成 →', delay:300 },
+    { type:'confirm', icon:'done', summaryKey:'hvc-delivery-confirm', text:'所有交付物已经准备就绪，随时可以提交给运维团队。您检查一下，没问题的话就可以正式交付了。', btnText:'确认交付完成 →', delay:300 },
   ];
 }
 
@@ -1245,11 +1529,23 @@ async function execPhase(idx) {
 
       showTyp(false);
 
-      // Render event with staggered entrance (pre-reserve space for sub-text)
+      // Render event container (empty text — typewriter fills it)
       const div = document.createElement('div'); div.className='ev';
-      div.innerHTML = `<div class="ev-icon">${evIcon(ev.icon)}</div><div class="ev-body"><div class="ev-t">${ev.text||''}</div>${ev.sub ? `<div class="ev-sub" style="margin-left:28px;display:none">${ev.sub}</div>` : ''}</div>`;
+      div.innerHTML = `<div class="ev-icon">${evIcon(ev.icon)}</div><div class="ev-body"><div class="ev-t"></div>${ev.sub ? `<div class="ev-sub" style="margin-left:28px;display:none">${ev.sub}</div>` : ''}</div>`;
       container.appendChild(div);
       sb();
+
+      // For confirm/decision events: render as report-style summary card, then interaction
+      if(ev.type === 'confirm' || ev.type === 'decision') {
+        // Remove the empty placeholder div (we'll show report card instead)
+        if(div.parentNode) div.parentNode.removeChild(div);
+        showReportCard(container, ev.text || '', ev.type, ev.summaryKey);
+        // Brief pause so user can read the report before interaction appears
+        await sleep(rand(600, 1200));
+      } else {
+        // Typewriter: reveal text character by character
+        await typeText(div.querySelector('.ev-t'), ev.text || '');
+      }
 
       // Show sub-text after a moment if present
       if(ev.sub) {
