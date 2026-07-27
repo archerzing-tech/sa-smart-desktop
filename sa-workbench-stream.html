@@ -684,6 +684,7 @@ const BADGE_CLASS = { '工具':'tool', '技能':'skill', '文档':'doc', '编码
 
 function closeNotif(el) {
   if(!el || !el.parentNode) return;
+  if(el._autoTimer) clearTimeout(el._autoTimer);
   el.classList.add('out');
   setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300);
 }
@@ -711,6 +712,12 @@ function notify(icon, text) {
     </div>`;
   stack.appendChild(el);
 
+  // Default auto-dismiss after 5s (overridden by closeNotif for event-bound notifications)
+  const timer = setTimeout(() => {
+    if(el.parentNode) { el.classList.add('out'); setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300); }
+  }, 5000);
+  el._autoTimer = timer;
+
   // Cap at 6 visible — remove oldest immediately
   while(stack.children.length > 6) {
     const first = stack.children[0];
@@ -722,6 +729,7 @@ function notify(icon, text) {
 function dismissNotif(btn) {
   const el = btn.closest('.notif');
   if(!el) return;
+  if(el._autoTimer) clearTimeout(el._autoTimer);
   el.classList.add('out');
   setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300);
 }
